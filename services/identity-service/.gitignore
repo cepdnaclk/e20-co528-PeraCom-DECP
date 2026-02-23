@@ -6,3 +6,6 @@ dist
 
 # Ignore environment variables
 .env
+
+# Prisma Generated Client
+*/generated/prisma-client/

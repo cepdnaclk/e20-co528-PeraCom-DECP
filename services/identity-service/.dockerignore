@@ -27,3 +27,6 @@ docker-compose*.yml
 # OS files
 .DS_Store
 Thumbs.db
+
+# Prisma Generated files
+generated/prisma-client
