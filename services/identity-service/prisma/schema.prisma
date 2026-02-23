@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
+  output   = "../src/generated/prisma-client"
 }
 
 datasource db {
@@ -47,7 +47,6 @@ model User {
   id          String   @id @db.Uuid
   reg_number  String   @unique @db.VarChar(20)
   email       String   @unique @db.VarChar(255)
-  google_id   String   @unique @db.VarChar(255)
   first_name  String   @db.VarChar(50)
   middle_name String?  @db.VarChar(100)
   last_name   String   @db.VarChar(50)

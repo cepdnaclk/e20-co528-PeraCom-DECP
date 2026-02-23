@@ -31,3 +31,11 @@ npx prisma migrate dev --name introspected_change
 ```
 
 This command will create a new migration that includes the changes from the introspection step. This way, your migration history will be up to date with the current state of your database.
+
+### Generate Prisma Client:
+
+```bash
+npx prisma generate
+```
+
+This command will generate the Prisma Client based on your `schema.prisma` file. The Prisma Client is a type-safe database client that allows you to interact with your database in a more intuitive way.
