@@ -1,5 +1,5 @@
 import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.js";
+import { AppModule } from "./app.module.js";
 import { connectProducer } from "@decp/event-bus";
 import { env } from "./config/validateEnv.config.js";
 
