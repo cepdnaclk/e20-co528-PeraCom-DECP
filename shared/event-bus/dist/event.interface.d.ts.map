@@ -1,0 +1,1 @@
+{"version":3,"file":"event.interface.d.ts","sourceRoot":"","sources":["../src/event.interface.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,SAAS,CAAC,CAAC;IAC1B,OAAO,EAAE,MAAM,CAAC;IAChB,SAAS,EAAE,MAAM,CAAC;IAClB,YAAY,EAAE,MAAM,CAAC;IACrB,SAAS,EAAE,MAAM,CAAC;IAClB,QAAQ,EAAE,MAAM,CAAC;IACjB,aAAa,CAAC,EAAE,MAAM,CAAC;IACvB,IAAI,EAAE,CAAC,CAAC;CACT"}

@@ -6,8 +6,14 @@ const kafka = new Kafka({
 
 const producer = kafka.producer();
 
-export async function publishEvent(topic: string, event: any) {
+// 1. Create a dedicated setup function
+export async function connectProducer() {
   await producer.connect();
+  console.log("🚀 Shared Event Bus Producer connected");
+}
+
+// 2. Create a publish function that can be used across services
+export async function publishEvent(topic: string, event: any) {
   await producer.send({
     topic,
     messages: [

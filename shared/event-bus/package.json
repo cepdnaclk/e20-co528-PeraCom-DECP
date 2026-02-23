@@ -1,8 +1,16 @@
 {
-  "name": "event-bus",
+  "name": "@decp/event-bus",
   "version": "1.0.0",
   "description": "Event bus for communication between kafka events",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
@@ -14,8 +22,7 @@
   "type": "module",
   "dependencies": {
     "kafkajs": "^2.2.4",
-    "node": "^25.6.1",
-    "uuid": "^13.0.0"
+    "node": "^25.6.1"
   },
   "devDependencies": {
     "@types/node": "^25.3.0",
