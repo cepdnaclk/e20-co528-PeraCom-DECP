@@ -1,80 +1,59 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { OAuth2Client } from "google-auth-library";
-import { v7 as uuidv7 } from "uuid";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { publishEvent } from "@decp/event-bus";
-import type { BaseEvent } from "@decp/event-bus";
+import { env } from "../config/validateEnv.config.js";
 
 @Injectable()
 export class AuthService {
-  private googleClient: OAuth2Client;
-  private readonly clientId: string;
+  private client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
 
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private configService: ConfigService,
-  ) {
-    this.clientId = this.configService.get<string>("google.clientId") || "";
-    this.googleClient = new OAuth2Client(this.clientId);
-  }
+  ) {}
 
   async loginWithGoogle(idToken: string) {
-    let ticket;
+    let payload;
+
+    // 1. Verify token with Google
     try {
-      // 1. Verify token with Google
-      ticket = await this.googleClient.verifyIdToken({
+      const ticket = await this.client.verifyIdToken({
         idToken,
-        audience: this.clientId,
+        audience: env.GOOGLE_CLIENT_ID,
       });
+
+      payload = ticket.getPayload();
     } catch (error) {
       throw new UnauthorizedException("Invalid Google Token");
     }
 
-    const payload = ticket.getPayload();
-    if (!payload) throw new UnauthorizedException("No payload from Google");
+    if (!payload) {
+      throw new UnauthorizedException("No payload from Google");
+    }
 
-    const { sub: googleId, email, given_name, family_name, picture } = payload;
+    if (!payload.email_verified) {
+      throw new UnauthorizedException("Google email not verified");
+    }
 
-    // 2. Check Database
-    let user = await this.prisma.user.findUnique({
-      where: { google_id: googleId },
+    const email = payload.email;
+
+    if (!email) {
+      throw new UnauthorizedException("Email missing in Google token");
+    }
+
+    console.log("Google google payload:", payload);
+
+    // 2. Check Database for user with email
+    const user = await this.prisma.user.findUnique({
+      where: { email: email },
     });
 
+    // 3. If user doesn't exist, send the login is failed response.
     if (!user) {
-      // PATH B: Registration Flow
-      const newUserId = uuidv7();
-
-      user = await this.prisma.user.create({
-        data: {
-          id: newUserId,
-          google_id: googleId,
-          email: email,
-          first_name: given_name || "",
-          last_name: family_name || "",
-          profile_picture_url: picture,
-          role: "STUDENT",
-          registration_number: `TEMP-${newUserId.substring(0, 6)}`,
-        },
-      });
-
-      // 3. Broadcast to Kafka
-      const userRegisteredEvent: BaseEvent<any> = {
-        eventId: uuidv7(),
-        eventType: "UserRegistered",
-        eventVersion: "1.0",
-        timestamp: new Date().toISOString(),
-        producer: "identity-service",
-        data: {
-          userId: user.id,
-          email: user.email,
-          role: user.role,
-        },
-      };
-
-      await publishEvent("identity.user.events", userRegisteredEvent);
+      throw new UnauthorizedException(
+        "User not found. Please contact the system administrator.",
+      );
     }
 
     // 4. Generate Internal JWT Passport

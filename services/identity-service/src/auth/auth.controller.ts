@@ -6,6 +6,7 @@ import { GoogleLoginDto } from "./dto/google-login.dto.js";
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // POST /auth/google
   @Post("google")
   async googleLogin(@Body() googleLoginDto: GoogleLoginDto) {
     return this.authService.loginWithGoogle(googleLoginDto.token);
