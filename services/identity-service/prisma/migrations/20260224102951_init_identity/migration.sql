@@ -12,12 +12,12 @@ CREATE TABLE "users" (
     "id" UUID NOT NULL,
     "reg_number" VARCHAR(20) NOT NULL,
     "email" VARCHAR(255) NOT NULL,
-    "google_id" VARCHAR(255) NOT NULL,
     "first_name" VARCHAR(50) NOT NULL,
     "middle_name" VARCHAR(100),
     "last_name" VARCHAR(50) NOT NULL,
     "residence" VARCHAR(255),
     "role" "UserRole" NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
     "profile_pic" TEXT,
     "header_img" TEXT,
     "headline" VARCHAR(255),
@@ -104,13 +104,7 @@ CREATE UNIQUE INDEX "users_reg_number_key" ON "users"("reg_number");
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_google_id_key" ON "users"("google_id");
-
--- CreateIndex
 CREATE INDEX "users_email_idx" ON "users"("email");
-
--- CreateIndex
-CREATE INDEX "users_google_id_idx" ON "users"("google_id");
 
 -- CreateIndex
 CREATE INDEX "social_links_user_id_idx" ON "social_links"("user_id");

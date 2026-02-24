@@ -1,11 +1,12 @@
 import { Kafka } from "kafkajs";
-const kafka = new Kafka({
-    brokers: [process.env.KAFKA_BROKER || "kafka:9092"],
-});
-export async function createConsumer(groupId, topic) {
+export async function createConsumer(brokers, groupId, topic) {
+    const kafka = new Kafka({
+        brokers: brokers,
+    });
     const consumer = kafka.consumer({ groupId });
     await consumer.connect();
-    await consumer.subscribe({ topic });
+    await consumer.subscribe({ topic, fromBeginning: true });
+    console.log(`🎧 Consumer connected to topic [${topic}] with group [${groupId}]`);
     return consumer;
 }
 //# sourceMappingURL=consumer.js.map

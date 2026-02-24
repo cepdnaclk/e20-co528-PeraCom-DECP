@@ -1,10 +1,11 @@
 import { Kafka } from "kafkajs";
-const kafka = new Kafka({
-    brokers: [process.env.KAFKA_BROKER || "kafka:9092"],
-});
-const producer = kafka.producer();
-// 1. Create a dedicated setup function
-export async function connectProducer() {
+let producer;
+// 1. Require the brokers to be passed in from the microservice
+export async function connectProducer(brokers) {
+    const kafka = new Kafka({
+        brokers: brokers, // Now it gets the perfectly loaded variables!
+    });
+    producer = kafka.producer();
     await producer.connect();
     console.log("🚀 Shared Event Bus Producer connected");
 }

@@ -1,12 +1,20 @@
-import { Kafka } from "kafkajs";
+import { Kafka, type Consumer } from "kafkajs";
 
-const kafka = new Kafka({
-  brokers: [process.env.KAFKA_BROKER || "kafka:9092"],
-});
+export async function createConsumer(
+  brokers: string[],
+  groupId: string,
+  topic: string,
+): Promise<Consumer> {
+  const kafka = new Kafka({
+    brokers: brokers,
+  });
 
-export async function createConsumer(groupId: string, topic: string) {
   const consumer = kafka.consumer({ groupId });
   await consumer.connect();
-  await consumer.subscribe({ topic });
+
+  await consumer.subscribe({ topic, fromBeginning: true });
+  console.log(
+    `🎧 Consumer connected to topic [${topic}] with group [${groupId}]`,
+  );
   return consumer;
 }

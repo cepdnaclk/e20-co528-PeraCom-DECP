@@ -9,6 +9,7 @@ function getValidatedEnv() {
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
     "GOOGLE_CALLBACK_URL",
+    "KAFKA_BROKER",
     "REDIS_HOST",
     "REDIS_PORT",
     "TTL_SECONDS",
@@ -23,11 +24,10 @@ function getValidatedEnv() {
 
   // 2. Return the guaranteed values
   return {
-    // NODE_PORT is optional since it has a fallback, so it's not in requiredVars
-    NODE_PORT: process.env.NODE_PORT || "3000",
-
     // This stops TypeScript from complaining about `string | undefined`.
+    NODE_PORT: parseInt(process.env.NODE_PORT as string, 10),
     DATABASE_URL: process.env.DATABASE_URL as string,
+    KAFKA_BROKER: process.env.KAFKA_BROKER as string,
     JWT_SECRET: process.env.JWT_SECRET as string,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID as string,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET as string,

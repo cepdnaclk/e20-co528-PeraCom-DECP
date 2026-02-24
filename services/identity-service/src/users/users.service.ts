@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   BadRequestException,
+  NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { v7 as uuidv7 } from "uuid";
@@ -15,7 +16,11 @@ export class UsersService {
   // ==========================================
   // SINGLE USER CREATION LOGIC
   // ==========================================
-  async createSingleUser(data: CreateUserDto) {
+  async createSingleUser(
+    data: CreateUserDto,
+    correlationId: string,
+    adminId: string,
+  ) {
     // 1. Check if email already exists
     const existing = await this.prisma.user.findUnique({
       where: { email: data.email.trim().toLowerCase() },
@@ -46,7 +51,8 @@ export class UsersService {
       eventVersion: "1.0",
       timestamp: new Date().toISOString(),
       producer: "identity-service",
-      correlationId: newUser.id,
+      correlationId: correlationId,
+      actorId: adminId,
       data: {
         user_id: newUser.id,
         email: newUser.email,
@@ -125,7 +131,11 @@ export class UsersService {
   // ==========================================
   // BULK CREATION LOGIC
   // ==========================================
-  async bulkCreateStudents(students: CreateUserDto[]) {
+  async bulkCreateStudents(
+    students: CreateUserDto[],
+    correlationId: string,
+    adminId: string,
+  ) {
     // 1. Check for duplicates and separate valid students from errors
     const validationResult = await this.validateBulkStudents(students);
 
@@ -161,6 +171,8 @@ export class UsersService {
       eventVersion: "1.0",
       timestamp: new Date().toISOString(),
       producer: "identity-service",
+      correlationId: correlationId,
+      actorId: adminId,
       data: {
         count: created.count,
         users: usersToInsert.map((u) => ({
@@ -177,5 +189,109 @@ export class UsersService {
 
     // 6. Return the result
     return { status: "Users created", count: created.count };
+  }
+
+  //////////////////////////////////////////////////
+  // SINGLE SUSPEND LOGIC
+  //////////////////////////////////////////////////
+  async suspendSingleUser(
+    userId: string,
+    correlationId: string,
+    adminId: string,
+  ) {
+    // 1. Prevent admin from suspending themselves
+    if (userId === adminId) {
+      throw new BadRequestException("Admin cannot suspend themselves");
+    }
+
+    // 2. Check if user exists and is active
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId, is_active: true },
+      data: { is_active: false },
+    });
+
+    console.log(`Attempted to suspend user ${userId}. Result:`, updatedUser);
+
+    // 3. If user doesn't exist, throw an error
+    if (!updatedUser) {
+      throw new NotFoundException("User already be suspended or do not exist.");
+    }
+
+    // 4. Broadcast the event so other services can react accordingly
+    const userSuspendedEvent: BaseEvent<any> = {
+      eventId: uuidv7(),
+      eventType: "identity.user.suspended",
+      eventVersion: "1.0",
+      timestamp: new Date().toISOString(),
+      producer: "identity-service",
+      correlationId: correlationId,
+      actorId: adminId,
+      data: {
+        user_id: updatedUser.id,
+        email: updatedUser.email,
+        first_name: updatedUser.first_name,
+        last_name: updatedUser.last_name,
+        role: updatedUser.role,
+      },
+    };
+    await publishEvent("identity.user.events", userSuspendedEvent);
+
+    // 5. Return the result
+    return {
+      message: "User suspended successfully",
+      userId: updatedUser.id,
+    };
+  }
+
+  //////////////////////////////////////////////////
+  // BULK SUSPEND LOGIC
+  //////////////////////////////////////////////////
+  async suspendBulkUsers(
+    userIds: string[],
+    correlationId: string,
+    adminId: string,
+  ) {
+    // 1. Prevent admin from suspending themselves
+    if (userIds.includes(adminId)) {
+      throw new BadRequestException("Admin cannot suspend themselves");
+    }
+
+    // 2. Suspend users in the database (only those that are currently active)
+    const result = await this.prisma.user.updateMany({
+      where: { id: { in: userIds }, is_active: true },
+      data: { is_active: false },
+    });
+
+    console.log(
+      `Attempted to suspend ${userIds.length} users. Actually suspended: ${result}`,
+    );
+
+    // 3. If no users were suspended, it could be because they were already suspended or didn't exist
+    if (result.count === 0) {
+      throw new BadRequestException(
+        "No users were suspended. They may already be suspended or do not exist.",
+      );
+    }
+
+    // 4. Broadcast a SINGLE Kafka event for the entire batch suspension
+    const batchSuspendedEvent: BaseEvent<any> = {
+      eventId: uuidv7(),
+      eventType: "identity.batch_users.suspended",
+      eventVersion: "1.0",
+      timestamp: new Date().toISOString(),
+      producer: "identity-service",
+      correlationId: correlationId,
+      actorId: adminId,
+      data: {
+        count: result.count,
+        users: result,
+      },
+    };
+    await publishEvent("identity.user.events", batchSuspendedEvent);
+
+    return {
+      message: "Users suspended successfully",
+      affectedCount: result.count,
+    };
   }
 }
