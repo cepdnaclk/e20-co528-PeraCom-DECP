@@ -46,7 +46,7 @@ export class AuthService {
 
     // 2. Check Database for user with email
     const user = await this.prisma.user.findUnique({
-      where: { email: email },
+      where: { email: email, is_active: true },
     });
 
     // 3. If user doesn't exist, send the login is failed response.

@@ -52,6 +52,7 @@ model User {
   last_name   String   @db.VarChar(50)
   residence   String?  @db.VarChar(255)
   role        UserRole
+  is_active   Boolean  @default(true)
   profile_pic String?
   header_img  String?
   headline    String?  @db.VarChar(255)
