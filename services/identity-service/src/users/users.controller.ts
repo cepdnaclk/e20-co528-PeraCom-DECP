@@ -28,18 +28,6 @@ import type { QueryUsersDto } from "./dto/query-users.dto.js";
 export class UsersController {
   constructor(private usersService: UsersService) {}
 
-  // POST /users
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles("ADMIN")
-  @Post()
-  createUser(
-    @Body() dto: CreateUserDto,
-    @CorrelationId() correlationId: string,
-    @ActorId() adminId: string,
-  ) {
-    return this.usersService.createSingleUser(dto, correlationId, adminId);
-  }
-
   // POST /users/bulk/validate
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN")
@@ -62,6 +50,18 @@ export class UsersController {
       correlationId,
       adminId,
     );
+  }
+
+  // POST /users
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("ADMIN")
+  @Post()
+  createUser(
+    @Body() dto: CreateUserDto,
+    @CorrelationId() correlationId: string,
+    @ActorId() adminId: string,
+  ) {
+    return this.usersService.createSingleUser(dto, correlationId, adminId);
   }
 
   // PATCH /users/:id/suspend
@@ -133,6 +133,27 @@ export class UsersController {
     return this.usersService.updateUserRoles(admin, correlationId, payload);
   }
 
+  // GET /users/:id
+  @UseGuards(JwtAuthGuard)
+  @Get(":id")
+  getPublicProfile(
+    @ActorId() actorId: string,
+    @CorrelationId() correlationId: string,
+    @Param("id") id: string,
+  ) {
+    return this.usersService.getPublicProfile(actorId, correlationId, id);
+  }
+
+  // GET /users/me
+  @UseGuards(JwtAuthGuard)
+  @Get("me")
+  getMyProfile(
+    @ActorId() userId: string,
+    @CorrelationId() correlationId: string,
+  ) {
+    return this.usersService.getMyProfile(userId, correlationId);
+  }
+
   // GET /users
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN")
@@ -143,16 +164,5 @@ export class UsersController {
     @Query() query: QueryUsersDto,
   ) {
     return this.usersService.getAdminUsers(adminId, correlationId, query);
-  }
-
-  // GET /users/:id
-  @UseGuards(JwtAuthGuard)
-  @Get(":id")
-  getPublicProfile(
-    @ActorId() actorId: string,
-    @CorrelationId() correlationId: string,
-    @Param("id") id: string,
-  ) {
-    return this.usersService.getPublicProfile(actorId, correlationId, id);
   }
 }

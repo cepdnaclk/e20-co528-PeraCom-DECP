@@ -610,7 +610,7 @@ export class UsersService {
     // 2. Broadcast a Kafka event for public profile view (for analytics, monitoring, etc.)
     const profileViewedEvent: BaseEvent<any> = {
       eventId: uuidv7(),
-      eventType: "identity.user_profile.viewed",
+      eventType: "identity.user_public.viewed",
       eventVersion: "1.0",
       timestamp: new Date().toISOString(),
       producer: "identity-service",
@@ -624,6 +624,54 @@ export class UsersService {
 
     await publishEvent("identity.user.events", profileViewedEvent);
 
+    return user;
+  }
+
+  // ==========================================
+  // MY ACCOUNT VIEW
+  // ==========================================
+  async getMyProfile(userId: string, correlationId: string) {
+    // 1. Fetch the user's own profile (only if active)
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        reg_number: true,
+        email: true,
+        first_name: true,
+        middle_name: true,
+        last_name: true,
+        residence: true,
+        profile_pic: true,
+        header_img: true,
+        headline: true,
+        bio: true,
+        role: true,
+      },
+    });
+
+    // 2. If user doesn't exist, throw an error
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    // 3. Broadcast a Kafka event for "My Profile" retrieval (for analytics, monitoring, etc.)
+    const profileViewedEvent: BaseEvent<any> = {
+      eventId: uuidv7(),
+      eventType: "identity.user_profile.viewed",
+      eventVersion: "1.0",
+      timestamp: new Date().toISOString(),
+      producer: "identity-service",
+      correlationId: correlationId,
+      actorId: userId,
+      data: {
+        viewedAt: new Date().toISOString(),
+      },
+    };
+
+    await publishEvent("identity.user.events", profileViewedEvent);
+
+    // 4. Return the user's own profile
     return user;
   }
 }
