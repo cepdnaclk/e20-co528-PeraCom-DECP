@@ -1,3 +1,6 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+
 function getValidatedEnv() {
   // 1. Define strictly what is required to boot the app
   const requiredVars = [
@@ -10,7 +13,6 @@ function getValidatedEnv() {
     "REDIS_PORT",
     "TTL_SECONDS",
   ] as const;
-
   const missing = requiredVars.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
