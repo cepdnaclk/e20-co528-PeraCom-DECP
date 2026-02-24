@@ -4,7 +4,6 @@ import {
   Body,
   UseGuards,
   Patch,
-  Req,
   Param,
 } from "@nestjs/common";
 import { UsersService } from "./users.service.js";
@@ -16,6 +15,7 @@ import type { CreateBulkDto } from "./dto/create-bulk.dto.js";
 import type { BulkSuspendDto } from "./dto/suspend-bulk.dto.js";
 import { CorrelationId } from "../auth/decorators/correlation-id.decorator.js";
 import { ActorId } from "../auth/decorators/actor.decorator.js";
+import type { UpdateProfileDto } from "./dto/update-profile.dto.js";
 
 @Controller("users")
 export class UsersController {
@@ -83,5 +83,16 @@ export class UsersController {
       correlationId,
       adminId,
     );
+  }
+
+  // PATCH /users/me
+  @UseGuards(JwtAuthGuard)
+  @Patch("me")
+  updateMyProfile(
+    @ActorId() actor: string,
+    @CorrelationId() correlationId: string,
+    @Body() payload: UpdateProfileDto,
+  ) {
+    return this.usersService.updateProfile(actor, correlationId, payload);
   }
 }

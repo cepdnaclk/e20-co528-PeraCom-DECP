@@ -8,6 +8,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { v7 as uuidv7 } from "uuid";
 import { publishEvent, type BaseEvent } from "@decp/event-bus";
 import type { CreateUserDto } from "./dto/create-user.dto.js";
+import type { UpdateProfileDto } from "./dto/update-profile.dto.js";
 
 @Injectable()
 export class UsersService {
@@ -191,9 +192,9 @@ export class UsersService {
     return { status: "Users created", count: created.count };
   }
 
-  //////////////////////////////////////////////////
+  // ==========================================
   // SINGLE SUSPEND LOGIC
-  //////////////////////////////////////////////////
+  // ==========================================
   async suspendSingleUser(
     userId: string,
     correlationId: string,
@@ -231,7 +232,6 @@ export class UsersService {
         email: updatedUser.email,
         first_name: updatedUser.first_name,
         last_name: updatedUser.last_name,
-        role: updatedUser.role,
       },
     };
     await publishEvent("identity.user.events", userSuspendedEvent);
@@ -243,9 +243,9 @@ export class UsersService {
     };
   }
 
-  //////////////////////////////////////////////////
+  // ==========================================
   // BULK SUSPEND LOGIC
-  //////////////////////////////////////////////////
+  // ==========================================
   async suspendBulkUsers(
     userIds: string[],
     correlationId: string,
@@ -293,5 +293,74 @@ export class UsersService {
       message: "Users suspended successfully",
       affectedCount: result.count,
     };
+  }
+
+  // ==========================================
+  // SELF PROFILE (GENERAL INFO) UPDATE LOGIC
+  // ==========================================
+  async updateProfile(
+    actorId: string,
+    correlationId: string,
+    payload: UpdateProfileDto,
+  ) {
+    // 1. Check user updating his/her own profile (userId should match actorId from controller)
+    if (payload.id !== actorId) {
+      throw new BadRequestException("You can only update your own profile");
+    }
+
+    // 2. Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.id, is_active: true },
+    });
+    if (!user) throw new NotFoundException("User not found");
+
+    // 3. Only allow updating permitted fields
+    const updatableFields = [
+      "first_name",
+      "middle_name",
+      "last_name",
+      "residence",
+      "profile_pic",
+      "header_img",
+      "headline",
+      "bio",
+    ];
+    const updateData: Record<string, any> = {};
+    for (const field of updatableFields) {
+      if (payload[field as keyof UpdateProfileDto] !== undefined) {
+        updateData[field] = payload[field as keyof UpdateProfileDto];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw new BadRequestException("No valid fields provided for update");
+    }
+
+    // 4. Update user
+    const updatedUser = await this.prisma.user.update({
+      where: { id: payload.id, is_active: true },
+      data: updateData,
+    });
+
+    // 5. Emit Kafka event
+    const profileUpdatedEvent: BaseEvent<any> = {
+      eventId: uuidv7(),
+      eventType: "identity.user_profile.updated",
+      eventVersion: "1.0",
+      timestamp: new Date().toISOString(),
+      producer: "identity-service",
+      correlationId: correlationId,
+      actorId: actorId,
+      data: {
+        user_id: updatedUser.id,
+        first_name: updatedUser.first_name,
+        last_name: updatedUser.last_name,
+        email: updatedUser.email,
+      },
+    };
+    await publishEvent("identity.user.events", profileUpdatedEvent);
+
+    // 5. Return the updated profile
+    return updatedUser;
   }
 }
