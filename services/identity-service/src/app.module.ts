@@ -13,6 +13,7 @@ import { PresenceModule } from "./presence/presence.module.js";
 import { UsersModule } from "./users/users.module.js";
 import { SocialModule } from "./social-media/social.module.js";
 import { ProjectsModule } from "./projects/projects.module.js";
+import { ExperienceModule } from "./experience/experience.module.js";
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ProjectsModule } from "./projects/projects.module.js";
     UsersModule,
     SocialModule,
     ProjectsModule,
+    ExperienceModule,
   ],
 })
 export class AppModule implements NestModule {
