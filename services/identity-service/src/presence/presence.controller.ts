@@ -9,7 +9,7 @@ export class PresenceController {
   @UseGuards(JwtAuthGuard)
   @Post("heartbeat")
   async heartbeat(@Req() req: any) {
-    const userId = req.user.sub;
+    const userId = req.user.userId;
 
     await this.presenceService.setOnline(userId);
 

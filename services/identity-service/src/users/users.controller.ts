@@ -143,6 +143,16 @@ export class UsersController {
     return this.usersService.getMyProfile(userId, correlationId);
   }
 
+  // GET /users/me - must be before :id to avoid "me" being captured as id
+  @UseGuards(JwtAuthGuard)
+  @Get("me")
+  getMyProfile(
+    @ActorId() userId: string,
+    @CorrelationId() correlationId: string,
+  ) {
+    return this.usersService.getMyProfile(userId, correlationId);
+  }
+
   // GET /users/:id
   @UseGuards(JwtAuthGuard)
   @Get(":id")
