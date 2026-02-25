@@ -31,7 +31,7 @@ COPY services/identity-service ./
 
 # Set environment variables to skip validation and provide dummy values for build phase
 ENV ENVIRONMENT="build"
-ENV DATABASE_URL="dummy-url"
+ENV DATABASE_URL="where-is-my-database"
 
 # Generate the Prisma Client tailored for Linux BEFORE building NestJS
 RUN npx prisma generate
