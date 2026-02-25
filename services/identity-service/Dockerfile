@@ -9,14 +9,20 @@ RUN apk add --no-cache openssl
 # Set the working directory in the container (inside the docker container, not the host machine)
 WORKDIR /app
 
+# Copy the shared event-bus FIRST so npm can find it
+COPY shared ./shared
+
+# Move down into the microservice directory
+WORKDIR /app/services/identity-service
+
 # Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
+COPY services/identity-service/package*.json ./
 
 # Install dependencies (including dev dependencies for building)
 RUN npm install
 
 # Copy the rest of the application code to the working directory
-COPY . .
+COPY services/identity-service ./
 
 # Generate the Prisma Client tailored for Linux BEFORE building NestJS
 RUN npx prisma generate
@@ -35,16 +41,19 @@ FROM node:24-alpine
 RUN apk add --no-cache openssl
 
 # Set the working directory in the container
-WORKDIR /app
+WORKDIR /app/services/identity-service
 
-# Copy only the necessary files from the builder stage to the production stage
-COPY --from=builder /app/dist ./dist
+# Copy the shared library (needed at runtime by the event-bus)
+COPY --from=builder /app/shared /app/shared
 
 # Copy the Prisma schema (needed to generate the production database engine)
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/services/identity-service/prisma ./prisma
+
+# Copy only the necessary files from the builder stage to the production stage
+COPY --from=builder /app/services/identity-service/dist ./dist
 
 # Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
+COPY services/identity-service/package*.json ./
 
 # Install only production dependencies (omit dev dependencies)
 RUN npm install --omit=dev
