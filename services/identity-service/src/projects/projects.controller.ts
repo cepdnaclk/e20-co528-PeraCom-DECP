@@ -12,7 +12,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { CorrelationId } from "../auth/decorators/correlation-id.decorator.js";
 import { ActorId } from "../auth/decorators/actor.decorator.js";
 import type { ProjectsService } from "./projects.service.js";
-import type { ProjectDto } from "./dto/projects.dto.js";
+import type { NewProjectDto, UpdateProjectDto } from "./dto/projects.dto.js";
 
 @Controller("projects")
 export class ProjectsController {
@@ -24,26 +24,20 @@ export class ProjectsController {
   createProject(
     @ActorId() actorId: string,
     @CorrelationId() correlationId: string,
-    @Body() payload: ProjectDto,
+    @Body() payload: NewProjectDto,
   ) {
     return this.projectsService.createProject(actorId, correlationId, payload);
   }
 
-  // PATCH /projects/:id
+  // PATCH /projects
   @UseGuards(JwtAuthGuard)
-  @Patch(":id")
+  @Patch()
   updateProject(
     @ActorId() actorId: string,
     @CorrelationId() correlationId: string,
-    @Param("id") projectId: string,
-    @Body() payload: Partial<ProjectDto>,
+    @Body() payload: UpdateProjectDto,
   ) {
-    return this.projectsService.updateProject(
-      actorId,
-      correlationId,
-      projectId,
-      payload,
-    );
+    return this.projectsService.updateProject(actorId, correlationId, payload);
   }
 
   // DELETE /projects/:id

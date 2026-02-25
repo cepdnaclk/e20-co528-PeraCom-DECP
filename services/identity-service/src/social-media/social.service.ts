@@ -7,7 +7,10 @@ import {
 import { PrismaService } from "../prisma/prisma.service.js";
 import { v7 as uuidv7 } from "uuid";
 import { publishEvent, type BaseEvent } from "@decp/event-bus";
-import { SocialLinkDto } from "./dto/social-media.dto.js";
+import {
+  CreateSocialLinkDto,
+  UpdateSocialLinkDto,
+} from "./dto/social-media.dto.js";
 
 @Injectable()
 export class SocialService {
@@ -19,20 +22,14 @@ export class SocialService {
   async createSocialLink(
     userId: string,
     correlationId: string,
-    payload: SocialLinkDto,
+    payload: CreateSocialLinkDto,
   ) {
-    // 1. Sanitise the URL — trim whitespace
-    const sanitisedUrl = payload.url.trim();
-    if (sanitisedUrl.length === 0) {
-      throw new BadRequestException("URL cannot be empty");
-    }
-
-    // 2. Prevent duplicate — same user + same platform + same URL
+    // 1. Prevent duplicate — same user + same platform + same URL
     const existingLink = await this.prisma.socialLink.findFirst({
       where: {
         user_id: userId,
         platform: payload.platform,
-        url: sanitisedUrl,
+        url: payload.url.trim(),
       },
     });
     if (existingLink) {
@@ -47,7 +44,7 @@ export class SocialService {
         id: uuidv7(),
         user_id: userId,
         platform: payload.platform,
-        url: sanitisedUrl,
+        url: payload.url.trim(),
       },
     });
 
@@ -83,27 +80,18 @@ export class SocialService {
   async updateSocialLink(
     userId: string,
     correlationId: string,
-    linkId: string,
-    payload: SocialLinkDto,
+    payload: UpdateSocialLinkDto,
   ) {
-    // 1. Validate linkId
-    if (!linkId || linkId.trim().length === 0) {
-      throw new BadRequestException("Social link ID is required");
-    }
+    // 1. Extract linkId and updateData from payload
+    const { id, ...data } = payload;
 
-    // 2. Find the existing social link
-    const sanitisedLink = linkId.trim();
-    if (sanitisedLink.length === 0) {
-      throw new BadRequestException("Social media link ID cannot be empty");
-    }
-
-    // 3. Prevent duplicate (same user, platform, url, but different id)
+    // 2. Prevent duplicate (same user, platform, url, but different id)
     const duplicate = await this.prisma.socialLink.findFirst({
       where: {
         user_id: userId,
         platform: payload.platform,
-        url: sanitisedLink,
-        NOT: { id: linkId },
+        url: data.url.trim(),
+        NOT: { id },
       },
     });
     if (duplicate) {
@@ -114,10 +102,10 @@ export class SocialService {
 
     // 4. Update the social link
     const updatedLink = await this.prisma.socialLink.update({
-      where: { id: linkId, user_id: userId },
+      where: { id, user_id: userId },
       data: {
         platform: payload.platform,
-        url: sanitisedLink,
+        url: data.url.trim(),
       },
     });
 

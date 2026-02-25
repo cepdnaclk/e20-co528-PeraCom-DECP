@@ -12,7 +12,10 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { CorrelationId } from "../auth/decorators/correlation-id.decorator.js";
 import { ActorId } from "../auth/decorators/actor.decorator.js";
 import type { SocialService } from "./social.service.js";
-import type { SocialLinkDto } from "./dto/social-media.dto.js";
+import type {
+  CreateSocialLinkDto,
+  UpdateSocialLinkDto,
+} from "./dto/social-media.dto.js";
 
 @Controller("social")
 export class SocialController {
@@ -24,26 +27,20 @@ export class SocialController {
   upsertSocialLinks(
     @ActorId() actorId: string,
     @CorrelationId() correlationId: string,
-    @Body() payload: SocialLinkDto,
+    @Body() payload: CreateSocialLinkDto,
   ) {
     return this.socialService.createSocialLink(actorId, correlationId, payload);
   }
 
-  // PATCH /social/:id
+  // PATCH /social
   @UseGuards(JwtAuthGuard)
-  @Patch(":id")
+  @Patch()
   updateSocialLink(
     @ActorId() actorId: string,
     @CorrelationId() correlationId: string,
-    @Param("id") linkId: string,
-    @Body() payload: SocialLinkDto,
+    @Body() payload: UpdateSocialLinkDto,
   ) {
-    return this.socialService.updateSocialLink(
-      actorId,
-      correlationId,
-      linkId,
-      payload,
-    );
+    return this.socialService.updateSocialLink(actorId, correlationId, payload);
   }
 
   // DELETE /social/:id

@@ -7,7 +7,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service.js";
 import { v7 as uuidv7 } from "uuid";
 import { publishEvent, type BaseEvent } from "@decp/event-bus";
-import type { ProjectDto } from "./dto/projects.dto.js";
+import type { NewProjectDto, UpdateProjectDto } from "./dto/projects.dto.js";
 
 @Injectable()
 export class ProjectsService {
@@ -53,7 +53,7 @@ export class ProjectsService {
   async createProject(
     userId: string,
     correlationId: string,
-    payload: ProjectDto,
+    payload: NewProjectDto,
   ) {
     // 1. Prevent duplicate (same user, same title, same start_date)
     const existing = await this.prisma.project.findFirst({
@@ -144,7 +144,7 @@ export class ProjectsService {
         correlationId: correlationId,
         actorId: userId,
         data: {
-          id: projectId,
+          id: deletedProject.id,
           user_id: userId,
         },
       };
@@ -152,7 +152,7 @@ export class ProjectsService {
     } catch (error) {
       console.error("Failed to publish project.deleted event:", error);
     }
-    return { status: "project_deleted", id: projectId };
+    return { status: "project_deleted", id: deletedProject.id };
   }
 
   // ==========================================
@@ -161,17 +161,14 @@ export class ProjectsService {
   async updateProject(
     userId: string,
     correlationId: string,
-    projectId: string,
-    payload: Partial<ProjectDto>,
+    payload: UpdateProjectDto,
   ) {
-    // 1. Validate projectId exists
-    if (!projectId) {
-      throw new BadRequestException("Project ID is required");
-    }
+    // 1. Extract projectId and updateData from payload
+    const { id, ...data } = payload;
 
     // 2. Validate project belongs to user
     const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
+      where: { id },
     });
     if (!project) {
       throw new NotFoundException("Project not found");
@@ -181,13 +178,13 @@ export class ProjectsService {
     }
 
     // 3. Prevent duplicate if title/start_date is being changed
-    if (payload.title || payload.start_date) {
+    if (data.title || data.start_date) {
       const duplicate = await this.prisma.project.findFirst({
         where: {
           user_id: userId,
-          title: payload.title || project.title,
-          start_date: payload.start_date || project.start_date,
-          NOT: { id: projectId },
+          title: data.title || project.title,
+          start_date: data.start_date || project.start_date,
+          NOT: { id },
         },
       });
       if (duplicate) {
@@ -198,16 +195,19 @@ export class ProjectsService {
     }
 
     // 4. Create update data object with trimmed strings
-    const updateData: Record<string, any> = { ...payload };
+    const updateData: Record<string, any> = { ...data };
     for (const key in updateData) {
-      if (typeof updateData[key] === "string") {
+      if (
+        typeof updateData[key] === "string" &&
+        updateData[key].trim() !== "id"
+      ) {
         updateData[key] = updateData[key].trim();
       }
     }
 
     // 5. Update the project
     const updatedProject = await this.prisma.project.update({
-      where: { id: projectId, user_id: userId },
+      where: { id, user_id: userId },
       data: updateData,
     });
 

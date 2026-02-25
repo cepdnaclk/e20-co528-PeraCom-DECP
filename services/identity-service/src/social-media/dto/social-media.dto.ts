@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsUrl, IsUUID } from "class-validator";
+import { IsEnum, IsNotEmpty, IsUrl, IsUUID, Matches } from "class-validator";
 
 export enum SocialPlatform {
   LinkedIn = "LinkedIn",
@@ -11,12 +11,28 @@ export enum SocialPlatform {
   Other = "Other",
 }
 
-export class SocialLinkDto {
+export class CreateSocialLinkDto {
   @IsNotEmpty()
   @IsEnum(SocialPlatform)
   platform!: SocialPlatform;
 
   @IsNotEmpty()
   @IsUrl()
+  @Matches(/^\s*\S.*$/, { message: "URL cannot be empty or just whitespace" })
+  url!: string;
+}
+
+export class UpdateSocialLinkDto {
+  @IsNotEmpty()
+  @IsUUID()
+  id!: string;
+
+  @IsNotEmpty()
+  @IsEnum(SocialPlatform)
+  platform!: SocialPlatform;
+
+  @IsNotEmpty()
+  @IsUrl()
+  @Matches(/^\s*\S.*$/, { message: "URL cannot be empty or just whitespace" })
   url!: string;
 }
