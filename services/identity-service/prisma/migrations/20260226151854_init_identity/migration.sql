@@ -44,7 +44,7 @@ CREATE TABLE "projects" (
     "id" UUID NOT NULL,
     "user_id" UUID NOT NULL,
     "title" VARCHAR(255) NOT NULL,
-    "start_date" DATE,
+    "start_date" DATE NOT NULL,
     "end_date" DATE,
     "description" TEXT,
     "link" TEXT,
@@ -105,6 +105,9 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE INDEX "users_email_idx" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "social_links_url_key" ON "social_links"("url");
 
 -- CreateIndex
 CREATE INDEX "social_links_user_id_idx" ON "social_links"("user_id");
