@@ -631,6 +631,8 @@ export class UsersService {
   // MY ACCOUNT VIEW
   // ==========================================
   async getMyProfile(userId: string, correlationId: string) {
+    console.log(`Fetching profile request`);
+
     // 1. Fetch the user's own profile (only if active)
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
