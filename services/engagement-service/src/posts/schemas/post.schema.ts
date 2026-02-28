@@ -5,7 +5,7 @@ import { Document } from "mongoose";
 
 export type PostDocument = Post & Document;
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, optimisticConcurrency: true })
 export class Post {
   @Prop({ required: true })
   authorId!: string;

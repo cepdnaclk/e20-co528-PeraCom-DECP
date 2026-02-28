@@ -7,12 +7,14 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Post, type PostDocument } from "./schemas/post.schema.js";
-import { CreatePostDto } from "./dto/create-post.dto.js";
 import { InjectMetric } from "@willsoto/nestjs-prometheus";
 import { Counter } from "prom-client";
 import { v7 as uuidv7 } from "uuid";
 import { publishEvent, type BaseEvent } from "@decp/event-bus";
 import { MinioService } from "../minio/minio.service.js";
+import { env } from "../config/validateEnv.config.js";
+import type { CreatePostDto } from "./dto/create-post.dto.js";
+import type { UpdatePostDto } from "./dto/update-post.dto.js";
 
 @Injectable()
 export class PostsService {
@@ -160,6 +162,9 @@ export class PostsService {
     let images: string[] = [];
     let video: string | null = null;
 
+    // ✨ Track uploaded object names so we know exactly what to delete if something fails
+    const uploadedObjectNames: string[] = [];
+
     // 2. Enforce media rules
     const imageFiles = files.filter((file) =>
       file.mimetype.startsWith("image/"),
@@ -185,32 +190,52 @@ export class PostsService {
       throw new BadRequestException("Only 1 video allowed");
     }
 
-    // 4. Upload images
-    for (const file of imageFiles) {
-      const objectName = `posts/${Date.now()}-${file.originalname}`;
-      const url = await this.minioService.uploadFile(
-        "posts-bucket",
-        objectName,
-        file.buffer,
-        file.mimetype,
-      );
-      images.push(url);
-    }
-
-    // 5. Upload video
-    if (videoFiles.length === 1) {
-      const file = videoFiles[0];
-      if (!file) {
-        throw new BadRequestException("Invalid video file");
+    try {
+      // 4. Upload images
+      for (const file of imageFiles) {
+        const objectName = `posts/${Date.now()}-${file.originalname}`;
+        const url = await this.minioService.uploadFile(
+          "posts-bucket",
+          objectName,
+          file.buffer,
+          file.mimetype,
+        );
+        images.push(url);
+        uploadedObjectNames.push(objectName);
       }
 
-      const objectName = `posts/${Date.now()}-${file.originalname}`;
-      video = await this.minioService.uploadFile(
-        "posts-bucket",
-        objectName,
-        file.buffer,
-        file.mimetype,
+      // 5. Upload video
+      if (videoFiles.length === 1) {
+        const file = videoFiles[0];
+        if (!file) {
+          throw new BadRequestException("Invalid video file");
+        }
+
+        const objectName = `posts/${Date.now()}-${file.originalname}`;
+        video = await this.minioService.uploadFile(
+          "posts-bucket",
+          objectName,
+          file.buffer,
+          file.mimetype,
+        );
+        uploadedObjectNames.push(objectName);
+      }
+    } catch (error) {
+      console.error(
+        `[TraceID: ${correlationId}] Failed to create post:`,
+        error,
       );
+      for (const objectName of uploadedObjectNames) {
+        await this.minioService
+          .deleteFile("posts-bucket", objectName)
+          .catch((err) =>
+            console.error(
+              `Rollback failed for file ${objectName}:`,
+              err.message,
+            ),
+          );
+      }
+      throw new BadRequestException("Failed to create post");
     }
 
     // 6. Create post document
@@ -221,35 +246,228 @@ export class PostsService {
       authorId: userId,
     });
 
-    // 7. Save to database
-    const savedPost = await createdPost.save();
+    try {
+      // 7. Save to database
+      const savedPost = await createdPost.save();
 
-    // 8. Increment Prometheus counter
-    this.postCounter.inc();
+      // 8. Increment Prometheus counter
+      this.postCounter.inc();
 
-    // 9. Emit an event or log for further processing
-    const postCreatedEvent: BaseEvent<any> = {
-      eventId: uuidv7(),
-      eventType: "engagement.post.created",
-      eventVersion: "1.0",
-      timestamp: new Date().toISOString(),
-      producer: "engagement-service",
-      correlationId: correlationId,
-      actorId: userId,
-      data: {
-        post_id: savedPost.id,
-      },
-    };
+      // 9. Emit an event or log for further processing
+      const postCreatedEvent: BaseEvent<any> = {
+        eventId: uuidv7(),
+        eventType: "engagement.post.created",
+        eventVersion: "1.0",
+        timestamp: new Date().toISOString(),
+        producer: "engagement-service",
+        correlationId: correlationId,
+        actorId: userId,
+        data: {
+          post_id: savedPost.id,
+        },
+      };
 
-    publishEvent("engagement.events", postCreatedEvent).catch((err) => {
+      publishEvent("engagement.events", postCreatedEvent).catch((err) => {
+        console.error(
+          `[TraceID: ${correlationId}] Failed to publish post created event:`,
+          err.message,
+        );
+      });
+
+      // 10. Return the created post
+      return savedPost;
+    } catch (dbError) {
       console.error(
-        `[TraceID: ${correlationId}] Failed to publish post created event:`,
-        err.message,
+        `[CorrID: ${correlationId}] DB Save failed! Rolling back Minio uploads...`,
       );
-    });
 
-    // 10. Return the created post
-    return savedPost;
+      for (const objectName of uploadedObjectNames) {
+        await this.minioService
+          .deleteFile("posts-bucket", objectName)
+          .catch((err) =>
+            console.error(
+              `Rollback failed for file ${objectName}:`,
+              err.message,
+            ),
+          );
+      }
+
+      throw dbError;
+    }
+  }
+
+  // =================================================
+  // Update Post by Owner (within 1 hour of creation)
+  // =================================================
+  // =================================================
+  // Update Post by Owner (with Minio Rollback)
+  // =================================================
+  async updatePost(
+    actorId: string,
+    correlationId: string,
+    payload: UpdatePostDto,
+    files: Express.Multer.File[] = [],
+  ): Promise<Post> {
+    const { postId, ...dto } = payload;
+
+    // 1. Validate postId format
+    if (!Types.ObjectId.isValid(postId)) {
+      throw new BadRequestException("Invalid post ID");
+    }
+
+    // 2. Fetch the post to verify ownership and edit window
+    const post = await this.postModel.findById(postId).exec();
+    if (!post) throw new NotFoundException("Post not found");
+
+    // 3. Strict ownership check
+    if (post.authorId !== actorId) {
+      console.warn(
+        `[CorrID: ${correlationId}] SECURITY: User ${actorId} attempted to update post ${postId} owned by ${post.authorId}`,
+      );
+      throw new ForbiddenException(
+        "You do not have permission to update this post",
+      );
+    }
+
+    // 4. Enforce 1-hour edit window
+    const createdAt = (post as any).createdAt as Date;
+    const elapsed = Date.now() - createdAt.getTime();
+    if (elapsed > env.EDIT_POST_TIME_LIMIT_MINUTES * 60 * 1000) {
+      throw new ForbiddenException(
+        "Posts can only be edited within 1 hour of creation",
+      );
+    }
+
+    // Track state for our Rollback/Cleanup system
+    const newlyUploadedObjects: string[] = [];
+    const oldMediaToCleanup: string[] = [];
+
+    // 5. Handle media replacement (if new files are provided)
+    if (files.length > 0) {
+      const imageFiles = files.filter((f) => f.mimetype.startsWith("image/"));
+      const videoFiles = files.filter((f) => f.mimetype.startsWith("video/"));
+
+      if (imageFiles.length > 0 && videoFiles.length > 0)
+        throw new BadRequestException("Cannot upload both images and video");
+      if (imageFiles.length > 10)
+        throw new BadRequestException("Maximum 10 images allowed");
+      if (videoFiles.length > 1)
+        throw new BadRequestException("Only 1 video allowed");
+
+      // Mark old media for deletion (we will delete these ONLY if the DB saves successfully)
+      if (post.images?.length > 0) oldMediaToCleanup.push(...post.images);
+      if (post.video) oldMediaToCleanup.push(post.video);
+
+      // Upload new images
+      if (imageFiles.length > 0) {
+        const uploadedImages: string[] = [];
+        for (const file of imageFiles) {
+          const objectName = `posts/${Date.now()}-${file.originalname}`;
+          const url = await this.minioService.uploadFile(
+            "posts-bucket",
+            objectName,
+            file.buffer,
+            file.mimetype,
+          );
+          uploadedImages.push(url);
+          newlyUploadedObjects.push(objectName); // Track for potential rollback!
+        }
+        post.images = uploadedImages;
+        post.video = null;
+      }
+
+      // Upload new video
+      if (videoFiles.length === 1) {
+        const file: any = videoFiles[0];
+        const objectName = `posts/${Date.now()}-${file.originalname}`;
+        const videoUrl = await this.minioService.uploadFile(
+          "posts-bucket",
+          objectName,
+          file.buffer,
+          file.mimetype,
+        );
+
+        post.video = videoUrl;
+        post.images = [];
+        newlyUploadedObjects.push(objectName); // Track for potential rollback!
+      }
+    }
+
+    // 6. Apply content update (if provided)
+    if (dto.content !== undefined) post.content = dto.content;
+
+    if (dto.content === undefined && files.length === 0) {
+      throw new BadRequestException(
+        "No updates provided. Supply content or media files.",
+      );
+    }
+
+    // 7. 🔥 THE DANGER ZONE: Try to save the DB
+    try {
+      const updatedPost = await post.save();
+
+      // SUCCESS! The DB is safe. Now we can cleanly delete their OLD files in the background.
+      // (Assuming your MinioService has a deleteFile method)
+      for (const oldUrl of oldMediaToCleanup) {
+        // Extract the object name from your URL and delete it
+        const objectName = oldUrl.split("/").slice(-2).join("/"); // basic extraction
+        this.minioService
+          .deleteFile("posts-bucket", objectName)
+          .catch((err) =>
+            console.error(
+              `[CorrID: ${correlationId}] Failed to cleanup old Minio file:`,
+              err.message,
+            ),
+          );
+      }
+
+      // 8. Increment Prometheus metric
+      this.postCounter.inc();
+
+      // 9. Emit event
+      const postUpdatedEvent: BaseEvent<any> = {
+        eventId: uuidv7(),
+        eventType: "engagement.post.updated",
+        eventVersion: "1.0",
+        timestamp: new Date().toISOString(),
+        producer: "engagement-service",
+        correlationId: correlationId,
+        actorId: actorId,
+        data: {
+          post_id: postId,
+          content_updated: dto.content !== undefined,
+          media_updated: files.length > 0,
+        },
+      };
+
+      publishEvent("engagement.events", postUpdatedEvent).catch((err) => {
+        console.error(
+          `[TraceID: ${correlationId}] Failed to publish post updated event:`,
+          err.message,
+        );
+      });
+
+      return updatedPost;
+    } catch (error) {
+      // 🚨 DISASTER AVERTED: The database failed to save!
+      // We must rollback and delete the NEW files we just uploaded so they don't become zombies.
+      console.error(
+        `[CorrID: ${correlationId}] DB Save failed! Rolling back Minio uploads...`,
+      );
+      for (const objectName of newlyUploadedObjects) {
+        await this.minioService
+          .deleteFile("posts-bucket", objectName)
+          .catch((err) =>
+            console.error(
+              `Rollback failed for file ${objectName}:`,
+              err.message,
+            ),
+          );
+      }
+
+      // Re-throw the error so NestJS returns a 500 or 400 to the user
+      throw error;
+    }
   }
 
   // =================================================
@@ -266,30 +484,21 @@ export class PostsService {
     }
 
     // 2. Fetch the post to verify ownership
-    const post = await this.postModel.findById(postId).exec();
+    const deletedPost = await this.postModel
+      .findOneAndDelete({ _id: postId, authorId: actorId })
+      .exec();
 
     // 3. Ensure it exists
-    if (!post) {
-      throw new NotFoundException("Post not found");
-    }
-
-    // 4. Strict ownership check
-    if (post.authorId !== actorId) {
-      console.warn(
-        `[CorrID: ${correlationId}] SECURITY: User ${actorId} attempted to delete post ${postId} owned by ${post.authorId}`,
-      );
-      throw new ForbiddenException(
-        "You do not have permission to delete this post",
+    if (!deletedPost) {
+      throw new NotFoundException(
+        "Post not found or you do not have permission.",
       );
     }
 
-    // 5. Perform the deletion
-    await this.postModel.findByIdAndDelete(postId).exec();
-
-    // 6. Increment Prometheus metric
+    // 4. Increment Prometheus metric
     this.postCounter.inc();
 
-    // 7. Emit an event for further processing
+    // 5. Emit an event for further processing
     const deleteEvent: BaseEvent<any> = {
       eventId: uuidv7(),
       eventType: "engagement.post.deleted",
@@ -300,7 +509,6 @@ export class PostsService {
       actorId: actorId,
       data: {
         post_id: postId,
-        author_id: post.authorId,
         deleted_by_admin: false,
       },
     };
@@ -312,7 +520,7 @@ export class PostsService {
       );
     });
 
-    // 8. Return success
+    // 6. Return success
     return {
       success: true,
       message: "Post successfully deleted",
@@ -333,20 +541,19 @@ export class PostsService {
     }
 
     // 2. Fetch the post to capture metadata before deletion
-    const post = await this.postModel.findById(postId).exec();
+    const deletedPost = await this.postModel
+      .findOneAndDelete({ _id: postId })
+      .exec();
 
     // 3. Ensure it exists
-    if (!post) {
+    if (!deletedPost) {
       throw new NotFoundException("Post not found");
     }
 
-    // 4. Perform the deletion (admin bypasses ownership check)
-    await this.postModel.findByIdAndDelete(postId).exec();
-
-    // 5. Increment Prometheus metric
+    // 4. Increment Prometheus metric
     this.postCounter.inc();
 
-    // 6. Emit an event for further processing
+    // 5. Emit an event for further processing
     const deleteEvent: BaseEvent<any> = {
       eventId: uuidv7(),
       eventType: "engagement.post.deleted",
@@ -357,7 +564,6 @@ export class PostsService {
       actorId: actorId,
       data: {
         post_id: postId,
-        author_id: post.authorId,
         deleted_by_admin: true,
       },
     };
@@ -369,7 +575,7 @@ export class PostsService {
       );
     });
 
-    // 7. Return success
+    // 6. Return success
     return {
       success: true,
       message: "Post successfully deleted by admin",

@@ -34,4 +34,19 @@ export class MinioService {
 
     return `${env.MINIO_PUBLIC_URL}/${bucket}/${objectName}`;
   }
+
+  async deleteFile(bucketName: string, objectName: string): Promise<void> {
+    try {
+      // The official Minio SDK method for deleting files
+      await this.minioClient.removeObject(bucketName, objectName);
+    } catch (error) {
+      // We log the error but don't crash the app,
+      // as file deletion failures shouldn't stop the user experience.
+      console.error(
+        `[MinioService] Failed to delete object ${objectName}:`,
+        error,
+      );
+      throw error;
+    }
+  }
 }
