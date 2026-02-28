@@ -271,6 +271,7 @@ services:
     depends_on:
       - postgres
       - kafka
+      - redis
     networks:
       - decp-network
     expose:
