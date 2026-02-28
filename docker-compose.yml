@@ -277,21 +277,21 @@ services:
     expose:
       - "4000"
 
-  # engagement-service:
-  #   container_name: decp-engagement-service
-  #   build:
-  #     context: .
-  #     dockerfile: ./services/engagement-service/Dockerfile
-  #   env_file:
-  #     - ./services/engagement-service/.env.prod
-  #   depends_on:
-  #     - mongo
-  #     - kafka
-  #     - minio
-  #   networks:
-  #     - decp-network
-  #   expose:
-  #     - "4001"
+  engagement-service:
+    container_name: decp-engagement-service
+    build:
+      context: .
+      dockerfile: ./services/engagement-service/Dockerfile
+    env_file:
+      - ./services/engagement-service/.env.prod
+    depends_on:
+      - mongo
+      - kafka
+      - minio
+    networks:
+      - decp-network
+    expose:
+      - "4001"
 
   # message-service:
   #   container_name: decp-message-service
