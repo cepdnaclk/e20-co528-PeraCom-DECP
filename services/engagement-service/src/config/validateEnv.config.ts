@@ -12,6 +12,8 @@ function getValidatedEnv() {
     "JWT_SECRET",
     "KAFKA_BROKER",
     "OTEL_EXPORTER_OTLP_ENDPOINT",
+    "MONGO_URI",
+    "LOG_LEVEL",
   ] as const;
   const missing = requiredVars.filter((key) => !process.env[key]);
 
@@ -30,6 +32,8 @@ function getValidatedEnv() {
     JWT_SECRET: process.env.JWT_SECRET as string,
     OTEL_EXPORTER_OTLP_ENDPOINT: process.env
       .OTEL_EXPORTER_OTLP_ENDPOINT as string,
+    MONGO_URI: process.env.MONGO_URI as string,
+    LOG_LEVEL: process.env.LOG_LEVEL as string,
   };
 }
 

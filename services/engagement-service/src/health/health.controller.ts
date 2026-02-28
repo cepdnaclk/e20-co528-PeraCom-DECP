@@ -1,10 +1,21 @@
 import { Controller, Get } from "@nestjs/common";
+import {
+  HealthCheck,
+  HealthCheckService,
+  MongooseHealthIndicator,
+} from "@nestjs/terminus";
 import { context, trace } from "@opentelemetry/api"; // ✨ Import trace here!
 
 @Controller()
 export class HealthController {
-  @Get("/health")
-  health() {
+  constructor(
+    private health: HealthCheckService,
+    private mongoose: MongooseHealthIndicator,
+  ) {}
+
+  // Liveness
+  @Get("health")
+  getHealth() {
     // 1. Grab the giant "backpack" (Context)
     const activeContext = context.active();
 
@@ -17,10 +28,17 @@ export class HealthController {
     console.log(`[TraceID: ${traceId}] -> Received health check request`);
 
     return {
-      status: "ok",
-      service: "identity-service",
+      status: "UP",
+      service: "engagement-service",
       traceId: traceId,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
     };
+  }
+
+  // Readiness
+  @Get("ready")
+  @HealthCheck()
+  check() {
+    return this.health.check([async () => this.mongoose.pingCheck("mongodb")]);
   }
 }

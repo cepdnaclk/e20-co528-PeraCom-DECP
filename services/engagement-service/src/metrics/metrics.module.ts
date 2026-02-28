@@ -1,15 +1,23 @@
 import { Module } from "@nestjs/common";
-import { MetricsController } from "./metrics.controller.js";
-import { PrometheusModule } from "@willsoto/nestjs-prometheus";
+import {
+  makeCounterProvider,
+  PrometheusModule,
+} from "@willsoto/nestjs-prometheus";
 
 @Module({
   imports: [
     PrometheusModule.register({
-      controller: MetricsController,
-      defaultMetrics: {
-        enabled: true,
-      },
+      defaultMetrics: { enabled: true },
     }),
   ],
+
+  providers: [
+    makeCounterProvider({
+      name: "engagement_service_requests_total",
+      help: "Total HTTP requests",
+    }),
+  ],
+
+  exports: [],
 })
 export class MetricsModule {}
