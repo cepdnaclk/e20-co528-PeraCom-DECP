@@ -27,3 +27,8 @@ export class Post {
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);
+
+// Indexes for high-performance queries
+PostSchema.index({ createdAt: -1 });
+PostSchema.index({ authorId: 1 });
+PostSchema.index({ _id: -1 }); // cursor pagination optimization
