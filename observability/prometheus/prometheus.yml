@@ -14,3 +14,9 @@ scrape_configs:
     static_configs:
       # Use the exact container name and the internal Docker port
       - targets: ["decp-engagement-service:4001"]
+
+  # Scrape configuration for the career service
+  - job_name: "career-service"
+    static_configs:
+      # Use the exact container name and the internal Docker port
+      - targets: ["decp-career-service:4002"]
