@@ -13,8 +13,7 @@ import { v7 as uuidv7 } from "uuid";
 import { publishEvent, type BaseEvent } from "@decp/event-bus";
 import { MinioService } from "../minio/minio.service.js";
 import { env } from "../config/validateEnv.config.js";
-import type { CreatePostDto } from "./dto/create-post.dto.js";
-import type { UpdatePostDto } from "./dto/update-post.dto.js";
+import type { CreatePostDto, UpdatePostDto } from "./dto/post.dto.js";
 
 @Injectable()
 export class PostsService {
@@ -105,20 +104,20 @@ export class PostsService {
     const posts = await this.postModel
       .find(filter)
       .sort({ _id: -1 })
-      .limit(safeLimit)
+      .limit(safeLimit + 1) // Fetch one extra to check if there's a next page
       .lean() // ✨ Maximum read performance
       .exec();
 
     // 4. Determine next cursor for pagination
     const nextCursor =
-      posts.length === safeLimit
-        ? String(posts[posts.length - 1]?._id ?? "")
+      posts.length > safeLimit
+        ? String(posts[posts.length - 2]?._id ?? "")
         : null;
 
     // 5. Increment Prometheus metric
     this.postCounter.inc();
 
-    // 5. Emit an event or log for further processing
+    // 6. Emit an event or log for further processing
     const feedViewedEvent: BaseEvent<any> = {
       eventId: uuidv7(),
       eventType: "engagement.feed.viewed",
@@ -142,7 +141,7 @@ export class PostsService {
       );
     });
 
-    // 6. Return feed payload
+    // 7. Return feed payload
     return {
       data: posts,
       nextCursor,
@@ -308,7 +307,7 @@ export class PostsService {
     payload: UpdatePostDto,
     files: Express.Multer.File[] = [],
   ): Promise<Post> {
-    const { postId, ...dto } = payload;
+    const { postId, content } = payload;
 
     // 1. Validate postId format
     if (!Types.ObjectId.isValid(postId)) {
@@ -330,7 +329,7 @@ export class PostsService {
     }
 
     // 4. Enforce 1-hour edit window
-    const createdAt = (post as any).createdAt as Date;
+    const createdAt = post.createdAt as Date;
     const elapsed = Date.now() - createdAt.getTime();
     if (elapsed > env.EDIT_POST_TIME_LIMIT_MINUTES * 60 * 1000) {
       throw new ForbiddenException(
@@ -394,13 +393,15 @@ export class PostsService {
     }
 
     // 6. Apply content update (if provided)
-    if (dto.content !== undefined) post.content = dto.content;
+    if (content !== undefined) post.content = content;
 
-    if (dto.content === undefined && files.length === 0) {
+    if (content === undefined && files.length === 0) {
       throw new BadRequestException(
         "No updates provided. Supply content or media files.",
       );
     }
+
+    post.isEdited = true; // Mark as edited
 
     // 7. 🔥 THE DANGER ZONE: Try to save the DB
     try {
@@ -435,7 +436,7 @@ export class PostsService {
         actorId: actorId,
         data: {
           post_id: postId,
-          content_updated: dto.content !== undefined,
+          content_updated: content !== undefined,
           media_updated: files.length > 0,
         },
       };

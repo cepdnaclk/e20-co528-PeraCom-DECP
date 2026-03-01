@@ -31,11 +31,8 @@ export class ReactionsService {
     correlationId: string,
     payload: CreateReactionDto,
   ) {
+    // Destructure the payload
     const { postId, reactionType } = payload;
-
-    // Validate postId format
-    if (!Types.ObjectId.isValid(postId))
-      throw new BadRequestException("Invalid post ID");
 
     // Check if the user ALREADY has a reaction on this post
     const existingReaction = await this.reactionModel.findOne({

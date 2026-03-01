@@ -4,7 +4,7 @@ import { ReactionType } from "../../posts/schemas/post.schema.js";
 
 export type ReactionDocument = Reaction & Document;
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, optimisticConcurrency: true })
 export class Reaction {
   @Prop({ type: Types.ObjectId, ref: "Post", required: true, index: true })
   postId!: Types.ObjectId;

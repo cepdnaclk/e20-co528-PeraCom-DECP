@@ -17,7 +17,7 @@ export class Post {
   @Prop({ required: true })
   authorId!: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, maxlength: 2000 })
   content!: string;
 
   @Prop({ type: [String], default: [] })
@@ -44,6 +44,12 @@ export class Post {
 
   @Prop({ default: 0 })
   commentsCount!: number;
+
+  @Prop({ default: false })
+  isEdited!: boolean;
+
+  createdAt!: Date;
+  updatedAt!: Date;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);
