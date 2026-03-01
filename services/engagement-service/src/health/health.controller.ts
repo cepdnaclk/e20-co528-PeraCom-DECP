@@ -4,11 +4,15 @@ import {
   HealthCheckService,
   MongooseHealthIndicator,
 } from "@nestjs/terminus";
-import { context, trace } from "@opentelemetry/api"; // ✨ Import trace here!
+import { context, trace } from "@opentelemetry/api";
+import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 
 @Controller()
 export class HealthController {
   constructor(
+    @InjectPinoLogger(HealthController.name)
+    private readonly logger: PinoLogger,
+
     private health: HealthCheckService,
     private mongoose: MongooseHealthIndicator,
   ) {}
@@ -25,7 +29,7 @@ export class HealthController {
     // 3. Read the traceId from the span (with a fallback just in case)
     const traceId = activeSpan?.spanContext().traceId || "no-active-trace";
 
-    console.log(`[TraceID: ${traceId}] -> Received health check request`);
+    this.logger.info({ traceId }, "Received health check request");
 
     return {
       status: "UP",
@@ -39,6 +43,7 @@ export class HealthController {
   @Get("ready")
   @HealthCheck()
   check() {
+    this.logger.info("Performing readiness check");
     return this.health.check([async () => this.mongoose.pingCheck("mongodb")]);
   }
 }

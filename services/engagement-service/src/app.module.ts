@@ -29,6 +29,17 @@ import { CommentsModule } from "./comments/comments.module.js";
     LoggerModule.forRoot({
       pinoHttp: {
         level: env.LOG_LEVEL,
+        ...(env.ENVIRONMENT !== "production" && {
+          transport: {
+            target: "pino-pretty",
+            options: {
+              singleLine: true,
+              colorize: true,
+              levelFirst: true,
+              translateTime: "SYS:standard",
+            },
+          },
+        }),
       },
     }),
 

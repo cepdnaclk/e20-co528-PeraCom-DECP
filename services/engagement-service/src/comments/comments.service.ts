@@ -16,14 +16,20 @@ import { publishEvent, type BaseEvent } from "@decp/event-bus";
 import { v7 as uuidv7 } from "uuid";
 import type { CreateCommentDto, UpdateCommentDto } from "./dto/comment.dto.js";
 import { env } from "../config/validateEnv.config.js";
+import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 
 @Injectable()
 export class CommentsService {
   constructor(
+    @InjectPinoLogger(CommentsService.name)
+    private readonly logger: PinoLogger,
+
     @InjectModel(Comment.name)
     private readonly commentModel: Model<CommentDocument>,
+
     @InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
     @InjectConnection() private readonly connection: Connection,
+
     @InjectMetric("engagement_comments_total")
     private commentCounter: Counter<string>,
   ) {}
@@ -38,6 +44,9 @@ export class CommentsService {
   ) {
     // 1. Destructure the payload
     const { postId, content } = payload;
+    this.logger.info(
+      `[TraceID: ${correlationId}] Attempting to add comment to post ${postId} by user ${actorId}`,
+    );
 
     // 2. Start a database session and transaction
     const session = await this.connection.startSession();
@@ -99,9 +108,9 @@ export class CommentsService {
       };
 
       publishEvent("engagement.events", commentEvent).catch((err) =>
-        console.error(
-          `[TraceID: ${correlationId}] Failed to publish comment event:`,
-          err.message,
+        this.logger.error(
+          { err, correlationId, postId },
+          "Failed to publish comment created event",
         ),
       );
 
@@ -109,6 +118,10 @@ export class CommentsService {
       return newComment;
     } catch (error) {
       // 10. Rollback the entire transaction if ANY step fails
+      this.logger.error(
+        { err: error, correlationId, postId },
+        "Error occurred while adding comment, rolling back transaction",
+      );
       await session.abortTransaction();
       throw error;
     } finally {
@@ -179,9 +192,9 @@ export class CommentsService {
     };
 
     publishEvent("engagement.events", commentsViewedEvent).catch((err) =>
-      console.error(
-        `[TraceID: ${correlationId}] Failed to publish comments viewed event:`,
-        err.message,
+      this.logger.error(
+        { err, correlationId, postId },
+        "Failed to publish comments viewed event",
       ),
     );
 
@@ -249,9 +262,9 @@ export class CommentsService {
       };
 
       publishEvent("engagement.events", deleteEvent).catch((err) =>
-        console.error(
-          `[TraceID: ${correlationId}] Failed to publish comment deleted event:`,
-          err.message,
+        this.logger.error(
+          { err, correlationId, postId: deletedComment.postId },
+          "Failed to publish comment deleted event",
         ),
       );
 
@@ -259,6 +272,10 @@ export class CommentsService {
       return { success: true, message: "Comment deleted successfully" };
     } catch (error) {
       // 8. Rollback the entire transaction if ANY step fails
+      this.logger.error(
+        { err: error, correlationId, commentId },
+        "Error occurred while deleting comment, rolling back transaction",
+      );
       await session.abortTransaction();
       throw error;
     } finally {
@@ -324,9 +341,9 @@ export class CommentsService {
       };
 
       publishEvent("engagement.events", deleteEvent).catch((err) =>
-        console.error(
-          `[TraceID: ${correlationId}] Failed to publish comment deleted event:`,
-          err.message,
+        this.logger.error(
+          { err, correlationId, postId: deletedComment.postId },
+          "Failed to publish comment deleted event",
         ),
       );
 
@@ -334,6 +351,10 @@ export class CommentsService {
       return { success: true, message: "Comment deleted successfully" };
     } catch (error) {
       // 8. Rollback the entire transaction if ANY step fails
+      this.logger.error(
+        { err: error, correlationId, commentId },
+        "Error occurred while deleting comment, rolling back transaction",
+      );
       await session.abortTransaction();
       throw error;
     } finally {
@@ -391,8 +412,9 @@ export class CommentsService {
       updatedComment = await existingComment.save();
     } catch (error) {
       if ((error as Error).name === "VersionError") {
-        console.warn(
-          `[CorrID: ${correlationId}] Concurrency conflict on comment edit ${commentId}`,
+        this.logger.warn(
+          { correlationId, commentId },
+          "Concurrency conflict detected while updating comment",
         );
         // Return a 409 Conflict so the frontend knows to refresh the data
         throw new ConflictException(
@@ -422,9 +444,9 @@ export class CommentsService {
     };
 
     publishEvent("engagement.events", updateEvent).catch((err) =>
-      console.error(
-        `[TraceID: ${correlationId}] Failed to publish comment updated event:`,
-        err.message,
+      this.logger.error(
+        { err, correlationId, postId: updatedComment.postId },
+        "Failed to publish comment updated event",
       ),
     );
 

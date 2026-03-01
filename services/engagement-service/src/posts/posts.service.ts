@@ -14,10 +14,14 @@ import { publishEvent, type BaseEvent } from "@decp/event-bus";
 import { MinioService } from "../minio/minio.service.js";
 import { env } from "../config/validateEnv.config.js";
 import type { CreatePostDto, UpdatePostDto } from "./dto/post.dto.js";
+import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 
 @Injectable()
 export class PostsService {
   constructor(
+    @InjectPinoLogger(PostsService.name)
+    private readonly logger: PinoLogger,
+
     @InjectModel(Post.name)
     private readonly postModel: Model<PostDocument>,
 
@@ -39,6 +43,7 @@ export class PostsService {
     if (!Types.ObjectId.isValid(postId)) {
       throw new BadRequestException("Invalid post ID");
     }
+    this.logger.info({ correlationId, postId }, "Fetching post by ID");
 
     // 2. Fetch post from database
     const post = await this.postModel.findById(postId).lean().exec();
@@ -64,9 +69,9 @@ export class PostsService {
     };
 
     publishEvent("engagement.post.viewed", viewEvent).catch((err) => {
-      console.error(
-        `[TraceID: ${correlationId}] Failed to publish view event:`,
-        err.message,
+      this.logger.error(
+        { err, correlationId, postId: post._id },
+        "Failed to publish view event",
       );
     });
 
@@ -135,9 +140,9 @@ export class PostsService {
     };
 
     publishEvent("engagement.events", feedViewedEvent).catch((err) => {
-      console.error(
-        `[TraceID: ${correlationId}] Failed to publish feed viewed event:`,
-        err.message,
+      this.logger.error(
+        { err, correlationId },
+        "Failed to publish feed viewed event",
       );
     });
 
@@ -160,6 +165,10 @@ export class PostsService {
     // 1. Validate media attachments
     let images: string[] = [];
     let video: string | null = null;
+    this.logger.info(
+      { correlationId, userId, fileCount: files.length },
+      "Creating post with media attachments",
+    );
 
     // ✨ Track uploaded object names so we know exactly what to delete if something fails
     const uploadedObjectNames: string[] = [];
@@ -220,17 +229,18 @@ export class PostsService {
         uploadedObjectNames.push(objectName);
       }
     } catch (error) {
-      console.error(
-        `[TraceID: ${correlationId}] Failed to create post:`,
-        error,
+      this.logger.error(
+        { err: error, correlationId, userId },
+        "Error occurred during media upload, rolling back any uploaded files",
       );
+
       for (const objectName of uploadedObjectNames) {
         await this.minioService
           .deleteFile("posts-bucket", objectName)
           .catch((err) =>
-            console.error(
-              `Rollback failed for file ${objectName}:`,
-              err.message,
+            this.logger.error(
+              { err, correlationId, objectName },
+              "Failed to rollback uploaded file",
             ),
           );
       }
@@ -267,26 +277,27 @@ export class PostsService {
       };
 
       publishEvent("engagement.events", postCreatedEvent).catch((err) => {
-        console.error(
-          `[TraceID: ${correlationId}] Failed to publish post created event:`,
-          err.message,
+        this.logger.error(
+          { err, correlationId, postId: savedPost.id },
+          "Failed to publish post created event",
         );
       });
 
       // 10. Return the created post
       return savedPost;
     } catch (dbError) {
-      console.error(
-        `[CorrID: ${correlationId}] DB Save failed! Rolling back Minio uploads...`,
+      this.logger.error(
+        { err: dbError, correlationId, userId },
+        "Database error occurred while creating post, rolling back uploaded media",
       );
 
       for (const objectName of uploadedObjectNames) {
         await this.minioService
           .deleteFile("posts-bucket", objectName)
           .catch((err) =>
-            console.error(
-              `Rollback failed for file ${objectName}:`,
-              err.message,
+            this.logger.error(
+              { err, correlationId, objectName },
+              "Failed to rollback uploaded file after DB error",
             ),
           );
       }
@@ -313,6 +324,10 @@ export class PostsService {
     if (!Types.ObjectId.isValid(postId)) {
       throw new BadRequestException("Invalid post ID");
     }
+    this.logger.info(
+      { correlationId, actorId, postId, fileCount: files.length },
+      "Updating post with potential media changes",
+    );
 
     // 2. Fetch the post to verify ownership and edit window
     const post = await this.postModel.findById(postId).exec();
@@ -415,9 +430,9 @@ export class PostsService {
         this.minioService
           .deleteFile("posts-bucket", objectName)
           .catch((err) =>
-            console.error(
-              `[CorrID: ${correlationId}] Failed to cleanup old Minio file:`,
-              err.message,
+            this.logger.error(
+              { err, correlationId, objectName },
+              "Failed to delete old media file after post update",
             ),
           );
       }
@@ -442,9 +457,9 @@ export class PostsService {
       };
 
       publishEvent("engagement.events", postUpdatedEvent).catch((err) => {
-        console.error(
-          `[TraceID: ${correlationId}] Failed to publish post updated event:`,
-          err.message,
+        this.logger.error(
+          { err, correlationId },
+          "Failed to publish post updated event",
         );
       });
 
@@ -452,16 +467,17 @@ export class PostsService {
     } catch (error) {
       // 🚨 DISASTER AVERTED: The database failed to save!
       // We must rollback and delete the NEW files we just uploaded so they don't become zombies.
-      console.error(
+      this.logger.error(
+        { correlationId },
         `[CorrID: ${correlationId}] DB Save failed! Rolling back Minio uploads...`,
       );
       for (const objectName of newlyUploadedObjects) {
         await this.minioService
           .deleteFile("posts-bucket", objectName)
           .catch((err) =>
-            console.error(
-              `Rollback failed for file ${objectName}:`,
-              err.message,
+            this.logger.error(
+              { err, correlationId, objectName },
+              "Failed to rollback uploaded Minio file",
             ),
           );
       }
@@ -483,6 +499,10 @@ export class PostsService {
     if (!Types.ObjectId.isValid(postId)) {
       throw new BadRequestException("Invalid post ID");
     }
+    this.logger.info(
+      { correlationId, actorId, postId },
+      "Attempting to delete post by owner",
+    );
 
     // 2. Fetch the post to verify ownership
     const deletedPost = await this.postModel
@@ -515,9 +535,9 @@ export class PostsService {
     };
 
     publishEvent("engagement.events", deleteEvent).catch((err) => {
-      console.error(
-        `[TraceID: ${correlationId}] Failed to publish post deleted event:`,
-        err.message,
+      this.logger.error(
+        { err, correlationId },
+        "Failed to publish post deleted event",
       );
     });
 
@@ -540,6 +560,10 @@ export class PostsService {
     if (!Types.ObjectId.isValid(postId)) {
       throw new BadRequestException("Invalid post ID");
     }
+    this.logger.info(
+      { correlationId, actorId, postId },
+      "Attempting to delete post as admin",
+    );
 
     // 2. Fetch the post to capture metadata before deletion
     const deletedPost = await this.postModel
@@ -570,9 +594,9 @@ export class PostsService {
     };
 
     publishEvent("engagement.events", deleteEvent).catch((err) => {
-      console.error(
-        `[TraceID: ${correlationId}] Failed to publish admin post deleted event:`,
-        err.message,
+      this.logger.error(
+        { err, correlationId },
+        "Failed to publish admin post deleted event",
       );
     });
 

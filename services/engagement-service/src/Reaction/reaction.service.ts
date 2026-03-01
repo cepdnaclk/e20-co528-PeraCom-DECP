@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Reaction, type ReactionDocument } from "./schemas/reaction.schema.js";
@@ -12,13 +8,19 @@ import type { Counter } from "prom-client";
 import { publishEvent, type BaseEvent } from "@decp/event-bus";
 import { v7 as uuidv7 } from "uuid";
 import type { CreateReactionDto } from "./dto/create-reaction.dto.js";
+import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 
 @Injectable()
 export class ReactionsService {
   constructor(
+    @InjectPinoLogger(ReactionsService.name)
+    private readonly logger: PinoLogger,
+
     @InjectModel(Reaction.name)
     private readonly reactionModel: Model<ReactionDocument>,
+
     @InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
+
     @InjectMetric("engagement_reactions_total")
     private reactionCounter: Counter<string>,
   ) {}
@@ -73,9 +75,9 @@ export class ReactionsService {
       };
 
       publishEvent("engagement.events", deletedEvent).catch((err) => {
-        console.error(
-          `[TraceID: ${correlationId}] Failed to publish reaction deleted event:`,
-          err.message,
+        this.logger.error(
+          { err, correlationId, postId },
+          "Failed to publish reaction deleted event",
         );
       });
 
@@ -117,9 +119,9 @@ export class ReactionsService {
       };
 
       publishEvent("engagement.events", reactionEvent).catch((err) => {
-        console.error(
-          `[TraceID: ${correlationId}] Failed to publish reaction updated event:`,
-          err.message,
+        this.logger.error(
+          { err, correlationId, postId },
+          "Failed to publish reaction updated event",
         );
       });
 
@@ -164,9 +166,9 @@ export class ReactionsService {
       };
 
       publishEvent("engagement.events", reactionCreatedEvent).catch((err) => {
-        console.error(
-          `[TraceID: ${correlationId}] Failed to publish reaction created event:`,
-          err.message,
+        this.logger.error(
+          { err, correlationId, postId },
+          "Failed to publish reaction created event",
         );
       });
 
