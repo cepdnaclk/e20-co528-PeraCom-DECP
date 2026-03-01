@@ -1,4 +1,4 @@
-import { trace, propagation, context } from "@opentelemetry/api";
+import { propagation, context } from "@opentelemetry/api";
 import { Kafka, type Producer } from "kafkajs";
 
 let producer: Producer;
