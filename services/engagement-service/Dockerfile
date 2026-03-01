@@ -3,9 +3,6 @@
 # Use the official Node.js image as the base image for the builder stage
 FROM node:24-alpine AS builder
 
-# CRITICAL: Prisma requires OpenSSL to run on Alpine Linux
-RUN apk add --no-cache openssl
-
 # Set the working directory in the container (inside the docker container, not the host machine)
 WORKDIR /app
 
@@ -29,13 +26,6 @@ RUN npm install
 # Copy the rest of the application code to the working directory
 COPY services/engagement-service ./
 
-# Set environment variables to skip validation and provide dummy values for build phase
-ENV ENVIRONMENT="build"
-ENV DATABASE_URL="where-is-my-database"
-
-# Generate the Prisma Client tailored for Linux BEFORE building NestJS
-RUN npx prisma generate
-
 # Build the application (this will create the dist directory with the compiled code)
 RUN npm run build
 
@@ -46,17 +36,11 @@ RUN npm run build
 # Use a smaller Node.js image for the production stage
 FROM node:24-alpine
 
-# CRITICAL: Prisma needs OpenSSL in the production environment too
-RUN apk add --no-cache openssl
-
 # Set the working directory in the container
 WORKDIR /app/services/engagement-service
 
 # Copy the shared library (needed at runtime by the event-bus)
 COPY --from=builder /app/shared /app/shared
-
-# Copy the Prisma schema (needed to generate the production database engine)
-COPY --from=builder /app/services/engagement-service/prisma ./prisma
 
 # Copy only the necessary files from the builder stage to the production stage
 COPY --from=builder /app/services/engagement-service/dist ./dist
@@ -66,9 +50,6 @@ COPY services/engagement-service/package*.json ./
 
 # Install only production dependencies (omit dev dependencies)
 RUN npm install --omit=dev
-
-# Generate the Prisma Client for production (creates the Linux engine binary)
-RUN npx prisma generate
 
 # Run the application using the compiled code in the dist directory
 CMD ["node", "dist/index.js"]

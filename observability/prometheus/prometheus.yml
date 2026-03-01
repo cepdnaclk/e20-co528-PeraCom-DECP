@@ -9,8 +9,8 @@ scrape_configs:
       # Use the exact container name and the internal Docker port
       - targets: ["decp-identity-service:4000"]
 
-  # Scrape configuration for the identity service
-  # - job_name: "identity-service"
-  # static_configs:
-  # Use the exact container name and the internal Docker port
-  # - targets: ["decp-identity-service:4000"]
+  # Scrape configuration for the engagement service
+  - job_name: "engagement-service"
+    static_configs:
+      # Use the exact container name and the internal Docker port
+      - targets: ["decp-engagement-service:4001"]

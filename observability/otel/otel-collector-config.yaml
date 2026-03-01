@@ -13,11 +13,6 @@ exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
 
-  #otlp_grpc/traces:
-  #  endpoint: "jaeger:4317" # Or jaeger:4317
-  #  tls:
-  #    insecure: true
-
   elasticsearch:
     endpoints: ["http://decp-elasticsearch:9200"]
     logs_index: "otel-logs"
@@ -38,7 +33,6 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [debug, elasticsearch]
-      #exporters: [debug, otlp_grpc/traces, elasticsearch]
 
     metrics:
       receivers: [otlp]
