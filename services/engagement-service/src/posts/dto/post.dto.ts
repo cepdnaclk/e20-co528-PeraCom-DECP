@@ -23,3 +23,14 @@ export class UpdatePostDto {
   @MaxLength(2000)
   content?: string;
 }
+
+export class RepostDto {
+  @IsNotEmpty()
+  @IsMongoId()
+  originalPostId!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  content?: string;
+}

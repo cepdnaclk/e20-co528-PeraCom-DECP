@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export enum ReactionType {
   LIKE = "LIKE",
@@ -45,6 +45,13 @@ export class Post {
   @Prop({ default: 0 })
   commentsCount!: number;
 
+  @Prop({ default: 0 })
+  repostCount!: number;
+
+  // ✨ If this document is a repost, this holds the ID of the original post
+  @Prop({ type: Types.ObjectId, ref: "Post", required: false, index: true })
+  originalPostId?: Types.ObjectId;
+
   @Prop({ default: false })
   isEdited!: boolean;
 
@@ -58,3 +65,14 @@ export const PostSchema = SchemaFactory.createForClass(Post);
 PostSchema.index({ createdAt: -1 });
 PostSchema.index({ authorId: 1 });
 PostSchema.index({ _id: -1 }); // cursor pagination optimization
+PostSchema.index(
+  { authorId: 1, originalPostId: 1 },
+  {
+    unique: true,
+    // This rule ONLY applies if they didn't write any content!
+    partialFilterExpression: {
+      originalPostId: { $exists: true },
+      content: { $exists: false },
+    },
+  },
+);

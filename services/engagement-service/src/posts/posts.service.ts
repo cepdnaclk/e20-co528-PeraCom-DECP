@@ -13,7 +13,11 @@ import { v7 as uuidv7 } from "uuid";
 import { publishEvent, type BaseEvent } from "@decp/event-bus";
 import { MinioService } from "../minio/minio.service.js";
 import { env } from "../config/validateEnv.config.js";
-import type { CreatePostDto, UpdatePostDto } from "./dto/post.dto.js";
+import type {
+  CreatePostDto,
+  RepostDto,
+  UpdatePostDto,
+} from "./dto/post.dto.js";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 
 @Injectable()
@@ -309,9 +313,6 @@ export class PostsService {
   // =================================================
   // Update Post by Owner (within 1 hour of creation)
   // =================================================
-  // =================================================
-  // Update Post by Owner (with Minio Rollback)
-  // =================================================
   async updatePost(
     actorId: string,
     correlationId: string,
@@ -605,5 +606,99 @@ export class PostsService {
       success: true,
       message: "Post successfully deleted by admin",
     };
+  }
+
+  // =================================================
+  // Create a Repost (Pure or Quote)
+  // =================================================
+  async repostPost(actorId: string, correlationId: string, payload: RepostDto) {
+    const { originalPostId, content } = payload;
+
+    // 1. Fetch the original post
+    const originalPost = await this.postModel
+      .findById(originalPostId)
+      .lean()
+      .exec();
+    if (!originalPost) {
+      throw new NotFoundException("Original post not found");
+    }
+
+    // ✨ THE "INCEPTION" PREVENTION ✨
+    // If the user tries to repost a repost, we link their new post to the ROOT post.
+    // This prevents deep nesting chains that break frontend UIs.
+    const rootPostId = originalPost.originalPostId || originalPost._id;
+
+    // 2. Idempotency Check (Only for "Pure" Reposts)
+    // If they aren't adding content, they can only pure-repost once.
+    const isQuote = content && content.trim().length > 0;
+
+    if (!isQuote) {
+      const existingPureRepost = await this.postModel.exists({
+        authorId: actorId,
+        originalPostId: rootPostId,
+        content: { $exists: false }, // Check for a post with no content
+      });
+
+      if (existingPureRepost) {
+        this.logger.warn(
+          { correlationId, actorId, rootPostId },
+          "User attempted to pure repost the same post multiple times",
+        );
+        return { success: true, message: "Already reposted" };
+      }
+    }
+
+    try {
+      // 3. Create the Repost Document
+      const repostDoc = new this.postModel({
+        authorId: actorId,
+        originalPostId: rootPostId,
+        content: isQuote ? content.trim() : undefined,
+      });
+
+      // 4. We MUST save this first to see if MongoDB rejects it
+      const savedRepost = await repostDoc.save();
+
+      // If we made it here, the save was successful!
+      // 5. Now it is safe to atomically increment the parent's counter.
+      await this.postModel.findByIdAndUpdate(rootPostId, {
+        $inc: { repostCount: 1 },
+      });
+
+      // 6. Metrics & Events
+      this.postCounter.inc(); // A repost is technically a new post creation!
+
+      // 7. Emit an event for further processing
+      const repostEvent: BaseEvent<any> = {
+        eventId: uuidv7(),
+        eventType: "engagement.post.reposted",
+        eventVersion: "1.0",
+        timestamp: new Date().toISOString(),
+        producer: "engagement-service",
+        correlationId: correlationId,
+        actorId: actorId,
+        data: {
+          new_post_id: savedRepost._id.toString(),
+          original_post_id: rootPostId.toString(),
+          is_quote: isQuote,
+        },
+      };
+
+      publishEvent("engagement.events", repostEvent).catch((err) =>
+        this.logger.error(
+          { err, correlationId },
+          "Failed to publish post reposted event",
+        ),
+      );
+
+      return savedRepost;
+    } catch (error) {
+      //✨ IDEMPOTENCY CATCH ✨
+      // If they double-clicked a pure repost, MongoDB blocks the second one.
+      if ((error as any)?.code === 11000) {
+        return { success: true, message: "Already reposted" };
+      }
+      throw error; // Throw real database crashes
+    }
   }
 }
