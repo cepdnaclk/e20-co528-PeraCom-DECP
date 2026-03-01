@@ -293,6 +293,21 @@ services:
     expose:
       - "4001"
 
+  career-service:
+    container_name: decp-career-service
+    build:
+      context: .
+      dockerfile: ./services/career-service/Dockerfile
+    env_file:
+      - ./services/career-service/.env.prod
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - decp-network
+    expose:
+      - "4002"
+
   # message-service:
   #   container_name: decp-message-service
   #   build:
@@ -322,21 +337,6 @@ services:
   #     - decp-network
   #   expose:
   #     - "4003"
-
-  # career-service:
-  #   container_name: decp-career-service
-  #   build:
-  #     context: .
-  #     dockerfile: ./services/career-service/Dockerfile
-  #   env_file:
-  #     - ./services/career-service/.env.prod
-  #   depends_on:
-  #     - postgres
-  #     - kafka
-  #   networks:
-  #     - decp-network
-  #   expose:
-  #     - "4004"
 
   # event-service:
   #   container_name: decp-event-service
