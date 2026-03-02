@@ -15,9 +15,13 @@ import { JobsModule } from "./jobs/jobs.module.js";
 import { ApplicationsModule } from "./applications/applications.module.js";
 import { LoggerModule } from "nestjs-pino";
 import { MongooseModule } from "@nestjs/mongoose";
+import { ScheduleModule } from "@nestjs/schedule";
 
 @Module({
   imports: [
+    // Enables the use of Cron jobs in the application
+    ScheduleModule.forRoot(),
+
     // Loads the environment variables globally
     ConfigModule.forRoot({
       isGlobal: true,
