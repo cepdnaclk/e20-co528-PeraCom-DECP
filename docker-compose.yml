@@ -309,6 +309,22 @@ services:
     expose:
       - "4002"
 
+  event-service:
+    container_name: decp-event-service
+    build:
+      context: .
+      dockerfile: ./services/event-service/Dockerfile
+    env_file:
+      - ./services/event-service/.env.prod
+    depends_on:
+      - mongo
+      - minio
+      - kafka
+    networks:
+      - decp-network
+    expose:
+      - "4003"
+
   # message-service:
   #   container_name: decp-message-service
   #   build:
@@ -338,21 +354,6 @@ services:
   #     - decp-network
   #   expose:
   #     - "4003"
-
-  # event-service:
-  #   container_name: decp-event-service
-  #   build:
-  #     context: .
-  #     dockerfile: ./services/event-service/Dockerfile
-  #   env_file:
-  #     - ./services/event-service/.env.prod
-  #   depends_on:
-  #     - postgres
-  #     - kafka
-  #   networks:
-  #     - decp-network
-  #   expose:
-  #     - "4005"
 
   # collaboration-service:
   #   container_name: decp-collab-service
