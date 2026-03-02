@@ -5,4 +5,4 @@ node_modules
 dist
 
 # Ignore environment variables
-.env
+.env.*

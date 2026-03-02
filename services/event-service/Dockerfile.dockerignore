@@ -1,29 +1,26 @@
 # Node modules (we install them inside container)
-node_modules
-npm-debug.log
-yarn-error.log
+**/node_modules
 
 # Local build artifacts
-dist
+**/dist
 
 # Environment files (for secrets, use env_file in compose)
-.env
-.env.local
-.env.*.local
+**/.env
+**/*.env.*
 
 # Git files
-.git
-.gitignore
+**/.git
+**/.gitignore
 
 # Docker / system files
-Dockerfile*
-docker-compose*.yml
+**/Dockerfile*
+**/docker-compose*.yml
 
 # IDE / editor files
-.vscode
-.idea
-*.swp
+**/.vscode
+**/.idea
+**/*.swp
 
 # OS files
-.DS_Store
-Thumbs.db
+**/.DS_Store
+**/Thumbs.db
