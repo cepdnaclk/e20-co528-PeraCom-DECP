@@ -325,6 +325,21 @@ services:
     expose:
       - "4003"
 
+  # collaboration-service:
+  #   container_name: decp-collab-service
+  #   build:
+  #     context: .
+  #     dockerfile: ./services/collaboration-service/Dockerfile
+  #   env_file:
+  #     - ./services/collaboration-service/.env.prod
+  #   depends_on:
+  #     - kafka
+  #     - redis
+  #   networks:
+  #     - decp-network
+  #   expose:
+  #     - "4004"
+
   # message-service:
   #   container_name: decp-message-service
   #   build:
@@ -339,7 +354,7 @@ services:
   #   networks:
   #     - decp-network
   #   expose:
-  #     - "4002"
+  #     - "4005"
 
   # notification-service:
   #   container_name: decp-notification-service
@@ -350,21 +365,6 @@ services:
   #     - ./services/notification-service/.env.prod
   #   depends_on:
   #     - kafka
-  #   networks:
-  #     - decp-network
-  #   expose:
-  #     - "4003"
-
-  # collaboration-service:
-  #   container_name: decp-collab-service
-  #   build:
-  #     context: .
-  #     dockerfile: ./services/collaboration-service/Dockerfile
-  #   env_file:
-  #     - ./services/collaboration-service/.env.prod
-  #   depends_on:
-  #     - kafka
-  #     - redis
   #   networks:
   #     - decp-network
   #   expose:
