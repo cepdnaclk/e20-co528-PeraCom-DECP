@@ -33,7 +33,7 @@ export class HealthController {
 
     return {
       status: "UP",
-      service: "career-service",
+      service: "collaboration-service",
       traceId: traceId,
       timestamp: new Date(),
     };

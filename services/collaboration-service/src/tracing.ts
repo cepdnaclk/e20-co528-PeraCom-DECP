@@ -9,7 +9,7 @@ const traceExporter = new OTLPTraceExporter({
 });
 
 const resource = resourceFromAttributes({
-  "service.name": "identity-service",
+  "service.name": "collaboration-service",
   "service.version": "1.0.0",
   "deployment.environment": env.ENVIRONMENT || "development",
 });
