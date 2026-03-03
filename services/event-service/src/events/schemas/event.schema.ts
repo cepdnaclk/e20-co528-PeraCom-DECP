@@ -63,7 +63,10 @@ export class Event {
   createdBy!: string; // actorId
 
   @Prop({ required: false })
-  bannerUrl?: string; // MinIO internal path
+  flyerUrl?: string;
+
+  @Prop({ required: false })
+  agendaUrl?: string;
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);

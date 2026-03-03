@@ -10,6 +10,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
 import { EventsService } from "./events.service.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
@@ -19,6 +20,8 @@ import { ActorId } from "../auth/decorators/actor.decorator.js";
 import { CorrelationId } from "../auth/decorators/correlation-id.decorator.js";
 import { CreateEventDto } from "./dto/event.dto.js";
 import { EventStatus, EventType } from "./schemas/event.schema.js";
+import { FileFieldsInterceptor } from "@nestjs/platform-express";
+import { env } from "../config/validateEnv.config.js";
 
 @Controller("events")
 export class EventsController {
@@ -28,6 +31,17 @@ export class EventsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN")
   @Post()
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: "flyer", maxCount: 1 },
+        { name: "agenda", maxCount: 1 },
+      ],
+      {
+        limits: { fileSize: env.MAX_FILE_SIZE_MB * 1024 * 1024 },
+      },
+    ),
+  )
   async createEvent(
     @ActorId() actorId: string,
     @CorrelationId() correlationId: string,

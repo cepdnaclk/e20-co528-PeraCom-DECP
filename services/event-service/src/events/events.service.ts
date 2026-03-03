@@ -3,9 +3,12 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  InternalServerErrorException,
+  ConflictException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
+import type { Multer } from "multer";
 import {
   Event,
   EventStatus,
@@ -18,6 +21,8 @@ import type { Counter } from "prom-client";
 import { publishEvent, type BaseEvent } from "@decp/event-bus";
 import { v7 as uuidv7 } from "uuid";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
+import { env } from "../config/validateEnv.config.js";
+import type { MinioService } from "../minio/minio.service.js";
 
 @Injectable()
 export class EventsService {
@@ -29,6 +34,9 @@ export class EventsService {
 
     @InjectMetric("event_created_total")
     private eventCreatedCounter: Counter<string>,
+
+    @InjectModel(Event.name) private readonly jobModel: Model<EventDocument>,
+    private readonly storageService: MinioService,
   ) {}
 
   // =================================================
@@ -38,34 +46,163 @@ export class EventsService {
     actorId: string,
     correlationId: string,
     dto: CreateEventDto,
+    flyerFile?: Express.Multer.File,
+    agendaFile?: Express.Multer.File,
   ) {
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);
     const now = new Date();
 
-    // 🛡️ Strict Chronological Boundaries
-    if (start < now)
+    // 1. 🛡️ Strict Chronological Boundaries (Fail Fast)
+    if (start < now) {
       throw new BadRequestException("Start date cannot be in the past");
-    if (end <= start)
+    }
+    if (end <= start) {
       throw new BadRequestException("End date must be after start date");
+    }
 
-    // Create the event in DRAFT status
-    const newEvent = new this.eventModel({
-      ...dto,
-      startDate: start,
-      endDate: end,
-      createdBy: actorId,
-      status: EventStatus.DRAFT,
-      rsvpCount: 0,
-    });
+    // 2. 🗂️ File Validation (Fail Fast)
+    if (flyerFile) {
+      if (!flyerFile.mimetype.startsWith("image/")) {
+        throw new BadRequestException("Flyer must be an image file");
+      }
+      if (flyerFile.size > env.MAX_FILE_SIZE_MB * 1024 * 1024) {
+        throw new BadRequestException(
+          `Flyer exceeds ${env.MAX_FILE_SIZE_MB}MB limit`,
+        );
+      }
+    }
 
-    // Save to DB
-    const savedEvent = await newEvent.save();
+    if (agendaFile) {
+      if (agendaFile.mimetype !== "application/pdf") {
+        throw new BadRequestException("Agenda must be a PDF file");
+      }
+      if (agendaFile.size > env.MAX_FILE_SIZE_MB * 1024 * 1024) {
+        throw new BadRequestException(
+          `Agenda exceeds ${env.MAX_FILE_SIZE_MB}MB limit`,
+        );
+      }
+    }
 
-    // Metrics: Increment total events created (in DRAFT state)
+    // 3. ✨ Pre-generate the MongoDB ID
+    // We do this BEFORE saving so we can use the ID to organize our MinIO folders cleanly
+    const eventId = new Types.ObjectId();
+
+    // 4. Generate Storage Paths
+    const flyerPath = flyerFile
+      ? `events/${eventId.toString()}/flyer-${uuidv7()}`
+      : undefined;
+
+    const agendaPath = agendaFile
+      ? `events/${eventId.toString()}/agenda-${uuidv7()}.pdf`
+      : undefined;
+
+    // 5. 🚀 Upload to MinIO (Concurrently)
+    try {
+      const uploadPromises = [];
+
+      // Assuming events are public, we might use a public bucket method.
+      // Adjust this to your specific storageService method (e.g., uploadPublicFile)
+      if (flyerFile && flyerPath) {
+        uploadPromises.push(
+          this.storageService.uploadFile(
+            "event-flyers",
+            flyerPath,
+            flyerFile.buffer,
+            flyerFile.mimetype,
+          ),
+        );
+      }
+
+      if (agendaFile && agendaPath) {
+        uploadPromises.push(
+          this.storageService.uploadFile(
+            "event-agendas",
+            agendaPath,
+            agendaFile.buffer,
+            agendaFile.mimetype,
+          ),
+        );
+      }
+
+      // Execute all uploads in parallel to halve the waiting time
+      await Promise.all(uploadPromises);
+    } catch (uploadError) {
+      this.logger.error(
+        { err: uploadError, correlationId, actorId },
+        "Failed to upload event files to MinIO",
+      );
+      throw new InternalServerErrorException(
+        "File upload failed. Please try again.",
+      );
+    }
+
+    // 6. 💾 Save to Database with Compensating Transaction
+    let savedEvent;
+    try {
+      const newEvent = new this.eventModel({
+        _id: eventId, // Assign the pre-generated ID
+        ...dto,
+        startDate: start,
+        endDate: end,
+        createdBy: actorId,
+        status: EventStatus.DRAFT,
+        rsvpCount: 0,
+        flyerUrl: flyerPath,
+        agendaUrl: agendaPath,
+      });
+
+      savedEvent = await newEvent.save();
+    } catch (dbError: any) {
+      // 💥 THE ROLLBACK
+      // The database failed (e.g., unique title constraint, network drop).
+      // We MUST delete the files we just pushed to MinIO.
+      this.logger.warn(
+        { err: dbError, correlationId, eventId },
+        "Database save failed, rolling back MinIO uploads",
+      );
+
+      const rollbackPromises = [];
+      if (flyerPath) {
+        rollbackPromises.push(
+          this.storageService
+            .deleteFile("event-flyers", flyerPath)
+            .catch((err) =>
+              this.logger.error(
+                { err, path: flyerPath },
+                "Failed to rollback flyer",
+              ),
+            ),
+        );
+      }
+      if (agendaPath) {
+        rollbackPromises.push(
+          this.storageService
+            .deleteFile("event-agendas", agendaPath)
+            .catch((err) =>
+              this.logger.error(
+                { err, path: agendaPath },
+                "Failed to rollback agenda",
+              ),
+            ),
+        );
+      }
+
+      // Run rollbacks in parallel. We use catch() inside the pushes so a failure
+      // to delete the flyer doesn't stop us from trying to delete the agenda.
+      await Promise.all(rollbackPromises);
+
+      if (dbError.code === 11000) {
+        throw new ConflictException(
+          "An event with this unique data already exists.",
+        );
+      }
+      throw new InternalServerErrorException("Failed to create event record.");
+    }
+
+    // 7. 📊 Metrics & Events (Post-Transaction)
     this.eventCreatedCounter.inc({ status: EventStatus.DRAFT });
 
-    // Emit 'Created' Event (Useful for Auditing & Analytics)
     const eventCreatedMsg: BaseEvent<any> = {
       eventId: uuidv7(),
       eventType: "event.new.created",
@@ -74,12 +211,21 @@ export class EventsService {
       producer: "event-service",
       correlationId,
       actorId,
-      data: { event_id: savedEvent._id.toString(), type: savedEvent.eventType },
+      data: {
+        event_id: savedEvent._id.toString(),
+        type: savedEvent.eventType,
+        has_flyer: !!flyerPath,
+        has_agenda: !!agendaPath,
+      },
     };
 
-    publishEvent("event.events", eventCreatedMsg).catch(console.error);
+    publishEvent("event.events", eventCreatedMsg).catch((err) =>
+      this.logger.error(
+        { err, correlationId },
+        "Failed to publish event.new.created msg",
+      ),
+    );
 
-    // Return the created event (still in DRAFT)
     return savedEvent;
   }
 
@@ -272,7 +418,7 @@ export class EventsService {
         event.eventType === EventType.HYBRID
           ? event.address
           : undefined,
-      bannerUrl: event.bannerUrl, // MinIO Presigned URL logic goes here if applicable
+      flyerUrl: event.flyerUrl, // MinIO Presigned URL logic goes here if applicable
     }));
 
     // 10. Kafka Event: User Viewed Feed (Useful for Analytics & Personalization in the Future)
