@@ -13,7 +13,7 @@ import {
 
   providers: [
     makeCounterProvider({
-      name: "career_service_requests_total",
+      name: "event_service_requests_total",
       help: "Total HTTP requests",
     }),
   ],
