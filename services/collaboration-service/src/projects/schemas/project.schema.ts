@@ -4,9 +4,9 @@ import { Document, Types } from "mongoose";
 export type ProjectDocument = Project & Document;
 
 export enum ProjectVisibility {
-  PRIVATE = "PRIVATE",   // Only invited members
+  PRIVATE = "PRIVATE", // Only invited members
   INTERNAL = "INTERNAL", // Anyone in the university/org can find and request to join
-  PUBLIC = "PUBLIC",     // Anyone on the internet can view (read-only)
+  PUBLIC = "PUBLIC", // Anyone on the internet can view (read-only)
 }
 
 export enum ProjectStatus {
@@ -15,7 +15,7 @@ export enum ProjectStatus {
 }
 
 // Enable versionKey for Optimistic Concurrency Control (OCC)
-@Schema({ timestamps: true, versionKey: '__v' })
+@Schema({ timestamps: true, versionKey: "__v" })
 export class Project {
   @Prop({ required: true, index: true })
   title!: string;
@@ -23,10 +23,20 @@ export class Project {
   @Prop({ required: true })
   description!: string;
 
-  @Prop({ type: String, enum: ProjectVisibility, default: ProjectVisibility.PRIVATE, index: true })
+  @Prop({
+    type: String,
+    enum: ProjectVisibility,
+    default: ProjectVisibility.PRIVATE,
+    index: true,
+  })
   visibility!: ProjectVisibility;
 
-  @Prop({ type: String, enum: ProjectStatus, default: ProjectStatus.ACTIVE, index: true })
+  @Prop({
+    type: String,
+    enum: ProjectStatus,
+    default: ProjectStatus.ACTIVE,
+    index: true,
+  })
   status!: ProjectStatus;
 
   // Soft Delete Flag
@@ -45,6 +55,9 @@ export class Project {
 
   @Prop({ required: true, index: true })
   createdBy!: string; // actorId
+
+  createdAt!: Date;
+  updatedAt!: Date;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

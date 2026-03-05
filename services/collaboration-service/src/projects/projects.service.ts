@@ -1,12 +1,18 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
 import { InjectModel, InjectConnection } from "@nestjs/mongoose";
-import { Model, Connection } from "mongoose";
-import { Project, type ProjectDocument } from "./schemas/project.schema.js";
+import { Model, Connection, Types } from "mongoose";
+import {
+  Project,
+  ProjectStatus,
+  ProjectVisibility,
+  type ProjectDocument,
+} from "./schemas/project.schema.js";
 import {
   ProjectMember,
   MemberRole,
@@ -190,5 +196,244 @@ export class ProjectsService {
       }
       throw error;
     }
+  }
+
+  // ========================================================================
+  // ARCHIVE PROJECT (Soft Delete)
+  // ========================================================================
+  async archiveProject(
+    actorId: string,
+    correlationId: string,
+    projectId: string,
+  ) {
+    if (!Types.ObjectId.isValid(projectId))
+      throw new BadRequestException("Invalid project ID");
+
+    const project = await this.projectModel
+      .findOne({ _id: projectId, isDeleted: false })
+      .exec();
+
+    if (!project) throw new NotFoundException("Project not found");
+
+    // Idempotency check
+    if (project.status === ProjectStatus.ARCHIVED) {
+      return { success: true, message: "Project is already archived" };
+    }
+
+    // Apply Soft Delete & Archive Status
+    project.status = ProjectStatus.ARCHIVED;
+    project.isDeleted = true;
+    project.deletedAt = new Date();
+
+    try {
+      const archivedProject = await project.save();
+
+      const projectArchivedEvent: BaseEvent<any> = {
+        eventId: uuidv7(),
+        eventType: "collaboration.project.archived",
+        eventVersion: "1.0",
+        timestamp: new Date().toISOString(),
+        producer: "collaboration-service",
+        correlationId,
+        actorId,
+        data: {
+          project_id: archivedProject._id.toString(),
+          title: archivedProject.title,
+        },
+      };
+
+      publishEvent("collaboration.events", projectArchivedEvent).catch((err) =>
+        this.logger.error(
+          { err, correlationId, actorId, projectId: archivedProject._id },
+          "Failed to publish project archived event",
+        ),
+      );
+
+      return { success: true, message: "Project successfully archived" };
+    } catch (error: any) {
+      if (error.name === "VersionError") {
+        throw new ConflictException(
+          "Failed to archive due to concurrent modifications. Try again.",
+        );
+      }
+      throw error;
+    }
+  }
+
+  // ========================================================================
+  // GET PROJECTS FEED (The Global Discovery Engine)
+  // ========================================================================
+  async getProjectsFeed(
+    cursor?: string, // ISO Date string of the last seen project's createdAt
+    cursorId?: string, // The _id of the last seen project
+    limit?: number,
+    search?: string,
+  ) {
+    // 1. Enforce Safe Limits to prevent DB DoS attacks
+    const safeLimit = Math.min(Math.max(limit || 10, 1), 50);
+
+    // 2. 🛡️ The Hardcoded Security Boundary
+    // NEVER allow PRIVATE projects to surface here.
+    const filter: any = {
+      status: ProjectStatus.ACTIVE,
+      isDeleted: false,
+      visibility: {
+        $in: [ProjectVisibility.PUBLIC, ProjectVisibility.INTERNAL],
+      },
+    };
+
+    // 3. Apply Text Search (Utilizes the $text index we created)
+    if (search && search.trim().length > 0) {
+      filter.$text = { $search: search.trim() };
+    }
+
+    // 4. Apply the Chronological Cursor (Sorting Newest First)
+    if (cursor && cursorId) {
+      if (!Types.ObjectId.isValid(cursorId)) {
+        throw new BadRequestException("Invalid cursorId format");
+      }
+
+      const cursorDate = new Date(cursor);
+
+      // We want projects created *before* the last seen project (going back in time)
+      // Or created at the exact same millisecond, but with a smaller _id (tiebreaker)
+      filter.$or = [
+        { createdAt: { $lt: cursorDate } },
+        {
+          createdAt: cursorDate,
+          _id: { $lt: new Types.ObjectId(cursorId) },
+        },
+      ];
+    } else if (cursor || cursorId) {
+      throw new BadRequestException(
+        "Both cursor and cursorId are required for pagination",
+      );
+    }
+
+    // 5. Execute Query with Limit + 1
+    const projects = await this.projectModel
+      .find(filter)
+      // When using $text search, sorting by textScore is usually better,
+      // but for a standard chronological feed, we sort by Date DESC, then ID DESC.
+      .sort(
+        search ? { score: { $meta: "textScore" } } : { createdAt: -1, _id: -1 },
+      )
+      .limit(safeLimit + 1)
+      .lean()
+      .exec();
+
+    // 6. Resolve Next Cursor
+    let nextCursor: string | null = null;
+    let nextCursorId: string | null = null;
+
+    if (projects.length > safeLimit) {
+      const extraProject = projects.pop(); // Remove the +1 lookahead item
+
+      const lastProject = projects[projects.length - 1];
+      nextCursor = lastProject?.createdAt.toISOString() || null;
+      nextCursorId = lastProject?._id.toString() || null;
+    }
+
+    // 7. Sanitize Output Data (Prevent leaking internal __v or exact deletedAt fields)
+    const sanitizedProjects = projects.map((p) => ({
+      id: p._id,
+      title: p.title,
+      description: p.description,
+      visibility: p.visibility,
+      memberCount: p.memberCount,
+      documentCount: p.documentCount,
+      createdBy: p.createdBy,
+      createdAt: p.createdAt,
+    }));
+
+    return {
+      data: sanitizedProjects,
+      nextCursor,
+      nextCursorId,
+      meta: {
+        appliedSearch: search || null,
+        count: sanitizedProjects.length,
+      },
+    };
+  }
+
+  // ========================================================================
+  // GET PROJECT BY ID (With strict visibility & role resolution)
+  // ========================================================================
+  async getProjectById(
+    actorId: string,
+    correlationId: string,
+    projectId: string,
+  ) {
+    if (!Types.ObjectId.isValid(projectId)) {
+      throw new BadRequestException("Invalid project ID format");
+    }
+
+    // 1. Fetch the project (Must not be soft-deleted)
+    const project = await this.projectModel
+      .findOne({ _id: projectId, isDeleted: false })
+      .lean()
+      .exec();
+
+    if (!project) throw new NotFoundException("Project not found");
+
+    // 2. Resolve the Actor's Membership Status
+    // We need to know if the person making the request is actually in the project.
+    const memberRecord = await this.memberModel
+      .findOne({
+        projectId: new Types.ObjectId(projectId),
+        userId: actorId,
+      })
+      .lean()
+      .exec();
+
+    // 3. 🛡️ The Zero-Trust Security Boundary
+    if (!memberRecord && project.visibility === ProjectVisibility.PRIVATE) {
+      // The user is not a member, and the project is PRIVATE.
+      // We throw a 404 to completely hide its existence from unauthorized users.
+      throw new NotFoundException("Project not found");
+    }
+
+    // Kafka Event Emission (Project Viewed)
+    const projectViewedEvent: BaseEvent<any> = {
+      eventId: uuidv7(),
+      eventType: "collaboration.project.viewed",
+      eventVersion: "1.0",
+      timestamp: new Date().toISOString(),
+      producer: "collaboration-service",
+      correlationId,
+      actorId,
+      data: {
+        project_id: project._id.toString(),
+        visibility: project.visibility,
+        isMember: !!memberRecord,
+        memberRole: memberRecord ? memberRecord.role : null,
+      },
+    };
+    publishEvent("collaboration.events", projectViewedEvent).catch((err) =>
+      this.logger.error(
+        { err, correlationId, actorId, projectId },
+        "Failed to publish project viewed event",
+      ),
+    );
+
+    // 4. Sanitize and Shape the Output
+    return {
+      id: project._id,
+      title: project.title,
+      description: project.description,
+      visibility: project.visibility,
+      status: project.status,
+      memberCount: project.memberCount,
+      documentCount: project.documentCount,
+      createdBy: project.createdBy,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+
+      // ✨ Frontend Context: Crucial for UI rendering!
+      // If myRole is null, the frontend knows to show a "Join Project" button.
+      // If myRole is 'OWNER', the frontend knows to show the "Settings" and "Delete" buttons.
+      myRole: memberRecord ? memberRecord.role : null,
+    };
   }
 }
