@@ -27,6 +27,7 @@ function getValidatedEnv() {
     "MINIO_PUBLIC_URL",
     "MAX_FILE_SIZE_MB",
     "ENVIRONMENT",
+    "MAX_TIME_LIMIT_MINUTES",
   ] as const;
 
   const missing = requiredVars.filter((key) => !process.env[key]);
@@ -55,6 +56,10 @@ function getValidatedEnv() {
     MINIO_PUBLIC_URL: process.env.MINIO_PUBLIC_URL as string,
     MAX_FILE_SIZE_MB: parseInt(process.env.MAX_FILE_SIZE_MB as string, 10),
     ENVIRONMENT: process.env.ENVIRONMENT as string,
+    MAX_TIME_LIMIT_MINUTES: parseInt(
+      process.env.MAX_TIME_LIMIT_MINUTES as string,
+      10,
+    ),
   };
 }
 

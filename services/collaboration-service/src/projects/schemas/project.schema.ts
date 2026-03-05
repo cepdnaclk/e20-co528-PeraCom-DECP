@@ -9,11 +9,6 @@ export enum ProjectVisibility {
   PUBLIC = "PUBLIC", // Anyone on the internet can view (read-only)
 }
 
-export enum ProjectStatus {
-  ACTIVE = "ACTIVE",
-  ARCHIVED = "ARCHIVED",
-}
-
 // Enable versionKey for Optimistic Concurrency Control (OCC)
 @Schema({ timestamps: true, versionKey: "__v" })
 export class Project {
@@ -30,14 +25,6 @@ export class Project {
     index: true,
   })
   visibility!: ProjectVisibility;
-
-  @Prop({
-    type: String,
-    enum: ProjectStatus,
-    default: ProjectStatus.ACTIVE,
-    index: true,
-  })
-  status!: ProjectStatus;
 
   // Soft Delete Flag
   @Prop({ default: false, index: true })

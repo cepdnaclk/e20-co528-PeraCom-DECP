@@ -9,7 +9,6 @@ import { InjectModel, InjectConnection } from "@nestjs/mongoose";
 import { Model, Connection, Types } from "mongoose";
 import {
   Project,
-  ProjectStatus,
   ProjectVisibility,
   type ProjectDocument,
 } from "./schemas/project.schema.js";
@@ -94,7 +93,7 @@ export class ProjectsService {
     }
 
     // 4. Observability & Event Emission (Post-Transaction)
-    this.projectCreatedCounter.inc({ visibility: savedProject?.visibility });
+    this.projectCreatedCounter.inc({ visibility: savedProject.visibility });
 
     const projectCreatedEvent: BaseEvent<any> = {
       eventId: uuidv7(),
@@ -199,9 +198,9 @@ export class ProjectsService {
   }
 
   // ========================================================================
-  // ARCHIVE PROJECT (Soft Delete)
+  // REMOVE PROJECT (Soft Delete)
   // ========================================================================
-  async archiveProject(
+  async removeProject(
     actorId: string,
     correlationId: string,
     projectId: string,
@@ -215,45 +214,39 @@ export class ProjectsService {
 
     if (!project) throw new NotFoundException("Project not found");
 
-    // Idempotency check
-    if (project.status === ProjectStatus.ARCHIVED) {
-      return { success: true, message: "Project is already archived" };
-    }
-
     // Apply Soft Delete & Archive Status
-    project.status = ProjectStatus.ARCHIVED;
     project.isDeleted = true;
     project.deletedAt = new Date();
 
     try {
-      const archivedProject = await project.save();
+      const deletedProject = await project.save();
 
-      const projectArchivedEvent: BaseEvent<any> = {
+      const projectDeletedEvent: BaseEvent<any> = {
         eventId: uuidv7(),
-        eventType: "collaboration.project.archived",
+        eventType: "collaboration.project.deleted",
         eventVersion: "1.0",
         timestamp: new Date().toISOString(),
         producer: "collaboration-service",
         correlationId,
         actorId,
         data: {
-          project_id: archivedProject._id.toString(),
-          title: archivedProject.title,
+          project_id: deletedProject._id.toString(),
+          title: deletedProject.title,
         },
       };
 
-      publishEvent("collaboration.events", projectArchivedEvent).catch((err) =>
+      publishEvent("collaboration.events", projectDeletedEvent).catch((err) =>
         this.logger.error(
-          { err, correlationId, actorId, projectId: archivedProject._id },
-          "Failed to publish project archived event",
+          { err, correlationId, actorId, projectId: deletedProject._id },
+          "Failed to publish project deleted event",
         ),
       );
 
-      return { success: true, message: "Project successfully archived" };
+      return { success: true, message: "Project successfully deleted" };
     } catch (error: any) {
       if (error.name === "VersionError") {
         throw new ConflictException(
-          "Failed to archive due to concurrent modifications. Try again.",
+          "Failed to delete due to concurrent modifications. Try again.",
         );
       }
       throw error;
@@ -261,9 +254,10 @@ export class ProjectsService {
   }
 
   // ========================================================================
-  // GET PROJECTS FEED (The Global Discovery Engine)
+  // GET PROJECTS FEED (The Public View | Internal View)
   // ========================================================================
   async getProjectsFeed(
+    visibility: ProjectVisibility[],
     cursor?: string, // ISO Date string of the last seen project's createdAt
     cursorId?: string, // The _id of the last seen project
     limit?: number,
@@ -275,11 +269,8 @@ export class ProjectsService {
     // 2. 🛡️ The Hardcoded Security Boundary
     // NEVER allow PRIVATE projects to surface here.
     const filter: any = {
-      status: ProjectStatus.ACTIVE,
       isDeleted: false,
-      visibility: {
-        $in: [ProjectVisibility.PUBLIC, ProjectVisibility.INTERNAL],
-      },
+      visibility: { $in: visibility },
     };
 
     // 3. Apply Text Search (Utilizes the $text index we created)
@@ -358,22 +349,138 @@ export class ProjectsService {
   }
 
   // ========================================================================
+  // GET PROJECTS FEED (The Private View)
+  // ========================================================================
+  async getMyProjectsFeed(
+    actorId: string,
+    cursor?: string, // ISO Date string of the last seen project's createdAt
+    cursorId?: string, // The _id of the last seen project
+    limit?: number,
+    search?: string,
+  ) {
+    // 1. Enforce Safe Limits to prevent DB DoS attacks
+    const safeLimit = Math.min(Math.max(limit || 10, 1), 50);
+
+    // 2. Resolve all projects where this actor is a contributor/member
+    const contributedProjectIds = await this.memberModel.distinct("projectId", {
+      userId: actorId,
+    });
+
+    if (contributedProjectIds.length === 0) {
+      return {
+        data: [],
+        nextCursor: null,
+        nextCursorId: null,
+        meta: {
+          appliedSearch: search || null,
+          count: 0,
+        },
+      };
+    }
+
+    // 3. Build filter for projects contributed by the actor only
+    const filter: any = {
+      isDeleted: false,
+      _id: { $in: contributedProjectIds },
+    };
+
+    // 4. Apply Text Search (Utilizes the $text index we created)
+    if (search && search.trim().length > 0) {
+      filter.$text = { $search: search.trim() };
+    }
+
+    // 5. Apply the Chronological Cursor (Sorting Newest First)
+    if (cursor && cursorId) {
+      if (!Types.ObjectId.isValid(cursorId)) {
+        throw new BadRequestException("Invalid cursorId format");
+      }
+
+      const cursorDate = new Date(cursor);
+
+      // We want projects created *before* the last seen project (going back in time)
+      // Or created at the exact same millisecond, but with a smaller _id (tiebreaker)
+      filter.$or = [
+        { createdAt: { $lt: cursorDate } },
+        {
+          createdAt: cursorDate,
+          _id: { $lt: new Types.ObjectId(cursorId) },
+        },
+      ];
+    } else if (cursor || cursorId) {
+      throw new BadRequestException(
+        "Both cursor and cursorId are required for pagination",
+      );
+    }
+
+    // 6. Execute Query with Limit + 1
+    const projects = await this.projectModel
+      .find(filter)
+      // When using $text search, sorting by textScore is usually better,
+      // but for a standard chronological feed, we sort by Date DESC, then ID DESC.
+      .sort(
+        search ? { score: { $meta: "textScore" } } : { createdAt: -1, _id: -1 },
+      )
+      .limit(safeLimit + 1)
+      .lean()
+      .exec();
+
+    // 7. Resolve Next Cursor
+    let nextCursor: string | null = null;
+    let nextCursorId: string | null = null;
+
+    if (projects.length > safeLimit) {
+      const extraProject = projects.pop(); // Remove the +1 lookahead item
+
+      const lastProject = projects[projects.length - 1];
+      nextCursor = lastProject?.createdAt.toISOString() || null;
+      nextCursorId = lastProject?._id.toString() || null;
+    }
+
+    // 8. Sanitize Output Data (Prevent leaking internal __v or exact deletedAt fields)
+    const sanitizedProjects = projects.map((p) => ({
+      id: p._id,
+      title: p.title,
+      description: p.description,
+      visibility: p.visibility,
+      memberCount: p.memberCount,
+      documentCount: p.documentCount,
+      createdBy: p.createdBy,
+      createdAt: p.createdAt,
+    }));
+
+    return {
+      data: sanitizedProjects,
+      nextCursor,
+      nextCursorId,
+      meta: {
+        appliedSearch: search || null,
+        count: sanitizedProjects.length,
+      },
+    };
+  }
+
+  // ========================================================================
   // GET PROJECT BY ID (With strict visibility & role resolution)
   // ========================================================================
   async getProjectById(
     actorId: string,
     correlationId: string,
     projectId: string,
+    visibility?: ProjectVisibility,
   ) {
     if (!Types.ObjectId.isValid(projectId)) {
       throw new BadRequestException("Invalid project ID format");
     }
 
     // 1. Fetch the project (Must not be soft-deleted)
-    const project = await this.projectModel
-      .findOne({ _id: projectId, isDeleted: false })
-      .lean()
-      .exec();
+    const filter: any = {
+      _id: projectId,
+      isDeleted: false,
+    };
+    if (visibility && visibility === ProjectVisibility.PUBLIC) {
+      filter.visibility = ProjectVisibility.PUBLIC;
+    }
+    const project = await this.projectModel.findOne(filter).lean().exec();
 
     if (!project) throw new NotFoundException("Project not found");
 
@@ -423,7 +530,6 @@ export class ProjectsService {
       title: project.title,
       description: project.description,
       visibility: project.visibility,
-      status: project.status,
       memberCount: project.memberCount,
       documentCount: project.documentCount,
       createdBy: project.createdBy,
