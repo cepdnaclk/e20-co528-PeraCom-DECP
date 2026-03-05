@@ -19,6 +19,9 @@ export class ProjectMember {
 
   @Prop({ type: String, enum: MemberRole, required: true })
   role!: MemberRole;
+
+  createdAt!: Date;
+  updatedAt!: Date;
 }
 
 export const ProjectMemberSchema = SchemaFactory.createForClass(ProjectMember);

@@ -13,6 +13,7 @@ import { HealthModule } from "./health/health.module.js";
 import { MetricsModule } from "./metrics/metrics.module.js";
 import { ProjectsModule } from "./projects/projects.module.js";
 import { InvitationsModule } from "./invitations/invitations.module.js";
+import { MembersModule } from "./members/members.module.js";
 import { LoggerModule } from "nestjs-pino";
 import { MongooseModule } from "@nestjs/mongoose";
 
@@ -55,6 +56,7 @@ import { MongooseModule } from "@nestjs/mongoose";
     MetricsModule,
     ProjectsModule,
     InvitationsModule,
+    MembersModule,
   ],
   providers: [JwtStrategy, JwtAuthGuard, RolesGuard],
   exports: [JwtAuthGuard, RolesGuard],
