@@ -13,6 +13,10 @@ import { HealthModule } from "./health/health.module.js";
 import { MetricsModule } from "./metrics/metrics.module.js";
 import { LoggerModule } from "nestjs-pino";
 import { MongooseModule } from "@nestjs/mongoose";
+import { ConsumerModule } from "./consumer/consumer.module.js";
+import { ProcessorModule } from "./processor/processor.module.js";
+import { NotificationsModule } from "./notifications/notifications.module.js";
+import { PreferencesModule } from "./preferences/preferences.module.js";
 
 @Module({
   imports: [
@@ -51,6 +55,10 @@ import { MongooseModule } from "@nestjs/mongoose";
     // Application modules
     HealthModule,
     MetricsModule,
+    PreferencesModule,
+    NotificationsModule,
+    ProcessorModule,
+    ConsumerModule,
   ],
   providers: [JwtStrategy, JwtAuthGuard, RolesGuard],
   exports: [JwtAuthGuard, RolesGuard],
