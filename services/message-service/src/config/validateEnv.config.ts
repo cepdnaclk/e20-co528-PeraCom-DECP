@@ -26,6 +26,7 @@ function getValidatedEnv() {
     "MINIO_SECRET_KEY",
     "MINIO_PUBLIC_URL",
     "ENVIRONMENT",
+    "REDIS_URL",
   ] as const;
 
   const missing = requiredVars.filter((key) => !process.env[key]);
@@ -53,6 +54,7 @@ function getValidatedEnv() {
     MINIO_SECRET_KEY: process.env.MINIO_SECRET_KEY as string,
     MINIO_PUBLIC_URL: process.env.MINIO_PUBLIC_URL as string,
     ENVIRONMENT: process.env.ENVIRONMENT as string,
+    REDIS_URL: process.env.REDIS_URL as string,
   };
 }
 

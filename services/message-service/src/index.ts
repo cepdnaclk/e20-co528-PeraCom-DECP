@@ -6,6 +6,7 @@ import { env } from "./config/validateEnv.config.js";
 import { ValidationPipe } from "@nestjs/common/pipes/index.js";
 import { TraceLoggingInterceptor } from "./trace-logging.interceptor.js";
 import { Logger } from "nestjs-pino";
+import { RedisIoAdapter } from "./adaptors/redis-io.adapter.js";
 
 async function bootstrap() {
   // 1. Start the OpenTelemetry SDK
@@ -36,6 +37,11 @@ async function bootstrap() {
 
   // 7. Initialize the Kafka shared event bus connection
   await connectProducer([env.KAFKA_BROKER]);
+
+  // 8. Initialize the Redis WebSocket adapter
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
 
   // 8. Start the application
   await app.listen(env.NODE_PORT);

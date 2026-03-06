@@ -148,4 +148,47 @@ export class ConversationsService {
       // so the oldest message is at the top of the screen.
     };
   }
+
+  // ========================================================================
+  // UPDATE READ WATERMARK (Double Blue Ticks)
+  // ========================================================================
+  async updateReadWatermark(
+    actorId: string,
+    conversationId: string,
+    messageId: string,
+  ) {
+    if (
+      !Types.ObjectId.isValid(conversationId) ||
+      !Types.ObjectId.isValid(messageId)
+    ) {
+      throw new BadRequestException("Invalid ID format");
+    }
+
+    const readAt = new Date();
+
+    // The positional operator `$` is the magic here.
+    // It finds the exact participant in the array and updates ONLY their nested fields.
+    const result = await this.conversationModel
+      .updateOne(
+        {
+          _id: new Types.ObjectId(conversationId),
+          "participants.userId": actorId,
+        },
+        {
+          $set: {
+            "participants.$.lastReadMessageId": new Types.ObjectId(messageId),
+            "participants.$.lastReadAt": readAt,
+          },
+        },
+      )
+      .exec();
+
+    if (result.matchedCount === 0) {
+      throw new ForbiddenException(
+        "You are not a participant in this conversation.",
+      );
+    }
+
+    return { readAt };
+  }
 }

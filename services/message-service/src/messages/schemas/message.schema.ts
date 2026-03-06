@@ -45,6 +45,9 @@ export class Message {
 
   @Prop({ default: false })
   isEdited!: boolean; // Flag to show "Edited" in the UI
+
+  createdAt!: Date; // Auto-managed by Mongoose
+  updatedAt!: Date; // Auto-managed by Mongoose
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
