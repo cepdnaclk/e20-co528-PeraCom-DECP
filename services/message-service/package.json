@@ -1,7 +1,7 @@
 {
-  "name": "career-service",
+  "name": "message-service",
   "version": "1.0.0",
-  "description": "career service for user authentication and management",
+  "description": "message service for user communication",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

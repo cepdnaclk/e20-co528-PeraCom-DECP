@@ -25,8 +25,6 @@ function getValidatedEnv() {
     "MINIO_ACCESS_KEY",
     "MINIO_SECRET_KEY",
     "MINIO_PUBLIC_URL",
-    "EDIT_POST_TIME_LIMIT_MINUTES",
-    "MAX_FILE_SIZE_MB",
     "ENVIRONMENT",
   ] as const;
 
@@ -54,11 +52,6 @@ function getValidatedEnv() {
     MINIO_ACCESS_KEY: process.env.MINIO_ACCESS_KEY as string,
     MINIO_SECRET_KEY: process.env.MINIO_SECRET_KEY as string,
     MINIO_PUBLIC_URL: process.env.MINIO_PUBLIC_URL as string,
-    EDIT_POST_TIME_LIMIT_MINUTES: parseInt(
-      process.env.EDIT_POST_TIME_LIMIT_MINUTES as string,
-      10,
-    ),
-    MAX_FILE_SIZE_MB: parseInt(process.env.MAX_FILE_SIZE_MB as string, 10),
     ENVIRONMENT: process.env.ENVIRONMENT as string,
   };
 }
