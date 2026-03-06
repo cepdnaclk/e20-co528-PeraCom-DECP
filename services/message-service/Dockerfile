@@ -15,16 +15,16 @@ RUN npm install
 RUN npm run build
 
 # Move back into the microservice directory
-WORKDIR /app/services/career-service
+WORKDIR /app/services/message-service
 
 # Copy package.json and package-lock.json to the working directory
-COPY services/career-service/package*.json ./
+COPY services/message-service/package*.json ./
 
 # Install dependencies (including dev dependencies for building)
 RUN npm install
 
 # Copy the rest of the application code to the working directory
-COPY services/career-service ./
+COPY services/message-service ./
 
 # Build the application (this will create the dist directory with the compiled code)
 RUN npm run build
@@ -37,16 +37,16 @@ RUN npm run build
 FROM node:24-alpine
 
 # Set the working directory in the container
-WORKDIR /app/services/career-service
+WORKDIR /app/services/message-service
 
 # Copy the shared library (needed at runtime by the event-bus)
 COPY --from=builder /app/shared /app/shared
 
 # Copy only the necessary files from the builder stage to the production stage
-COPY --from=builder /app/services/career-service/dist ./dist
+COPY --from=builder /app/services/message-service/dist ./dist
 
 # Copy package.json and package-lock.json to the working directory
-COPY services/career-service/package*.json ./
+COPY services/message-service/package*.json ./
 
 # Install only production dependencies (omit dev dependencies)
 RUN npm install --omit=dev
