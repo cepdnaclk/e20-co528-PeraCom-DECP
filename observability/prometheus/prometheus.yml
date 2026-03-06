@@ -31,7 +31,7 @@ scrape_configs:
   - job_name: "collaboration-service"
     static_configs:
       # Use the exact container name and the internal Docker port
-      - targets: ["decp-collaboration-service:4004"]
+      - targets: ["decp-collab-service:4004"]
 
   # Scrape configuration for the message service
   - job_name: "message-service"

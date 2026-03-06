@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { Client } from "minio";
 import { env } from "../config/validateEnv.config.js";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
@@ -38,6 +38,52 @@ export class MinioService {
     );
 
     return `${env.MINIO_PUBLIC_URL}/${bucket}/${objectName}`;
+  }
+
+  async generatePresignedPutUrl(
+    bucketName: string,
+    objectName: string,
+    expiryInSeconds: number = 900, // Default 15 mins
+  ): Promise<string> {
+    try {
+      // Asks MinIO for a secure, temporary URL the frontend can upload to directly
+      return await this.minioClient.presignedPutObject(
+        bucketName,
+        objectName,
+        expiryInSeconds,
+      );
+    } catch (error) {
+      this.logger.error(
+        { error, bucketName, objectName },
+        "Failed to generate presigned PUT URL",
+      );
+      throw new InternalServerErrorException(
+        "Storage system is temporarily unavailable.",
+      );
+    }
+  }
+
+  async generatePresignedGetUrl(
+    bucketName: string,
+    objectName: string,
+    expiryInSeconds: number = 900,
+  ): Promise<string> {
+    try {
+      // Asks MinIO for a secure, temporary URL the frontend can download from
+      return await this.minioClient.presignedGetObject(
+        bucketName,
+        objectName,
+        expiryInSeconds,
+      );
+    } catch (error) {
+      this.logger.error(
+        { error, bucketName, objectName },
+        "Failed to generate presigned GET URL",
+      );
+      throw new InternalServerErrorException(
+        "Failed to generate secure file link",
+      );
+    }
   }
 
   async deleteFile(bucketName: string, objectName: string): Promise<void> {

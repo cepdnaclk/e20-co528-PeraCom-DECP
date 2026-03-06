@@ -22,20 +22,19 @@ import { publishEvent, type BaseEvent } from "@decp/event-bus";
 import { v7 as uuidv7 } from "uuid";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { env } from "../config/validateEnv.config.js";
-import type { MinioService } from "../minio/minio.service.js";
+import { MinioService } from "../minio/minio.service.js";
 
 @Injectable()
 export class EventsService {
   constructor(
+    @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
+
     @InjectPinoLogger(EventsService.name)
     private readonly logger: PinoLogger,
-
-    @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
 
     @InjectMetric("event_created_total")
     private eventCreatedCounter: Counter<string>,
 
-    @InjectModel(Event.name) private readonly jobModel: Model<EventDocument>,
     private readonly storageService: MinioService,
   ) {}
 

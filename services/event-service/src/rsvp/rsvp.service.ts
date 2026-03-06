@@ -20,9 +20,9 @@ import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 @Injectable()
 export class RsvpService {
   constructor(
-    @InjectPinoLogger(RsvpService.name) private readonly logger: PinoLogger,
     @InjectModel(Rsvp.name) private readonly rsvpModel: Model<RsvpDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
+    @InjectPinoLogger(RsvpService.name) private readonly logger: PinoLogger,
   ) {}
 
   // =================================================
@@ -306,7 +306,7 @@ export class RsvpService {
               status: event.status,
               meetingLink: event.meetingLink,
               address: event.address,
-              bannerUrl: event.bannerUrl,
+              flyerUrl: event.flyerUrl,
             },
           };
         })

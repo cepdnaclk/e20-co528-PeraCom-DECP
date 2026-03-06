@@ -1,7 +1,7 @@
 {
   "name": "engagement-service",
   "version": "1.0.0",
-  "description": "engagement service for user authentication and management",
+  "description": "engagement service for PeraCom DECP project",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

@@ -1,7 +1,7 @@
 {
-  "name": "career-service",
+  "name": "collaboration-service",
   "version": "1.0.0",
-  "description": "career service for user authentication and management",
+  "description": "collaboration service for PeraCom DECP project",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

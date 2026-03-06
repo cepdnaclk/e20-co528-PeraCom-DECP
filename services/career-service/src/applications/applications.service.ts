@@ -39,6 +39,7 @@ export class ApplicationsService {
     private readonly appModel: Model<ApplicationDocument>,
 
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
+
     private readonly storageService: MinioService,
   ) {}
 
