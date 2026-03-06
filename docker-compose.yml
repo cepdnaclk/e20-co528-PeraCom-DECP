@@ -52,7 +52,7 @@ services:
 
   mongo:
     image: mongo:8.2.3
-    container_name: dhcp-mongo
+    container_name: decp-mongo
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
