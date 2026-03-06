@@ -12,8 +12,8 @@ import type { Connection, Model } from "mongoose";
 import {
   ProjectInvitation,
   InvitationStatus,
-  type ProjectInvitationDocument,
   InvitationType,
+  type ProjectInvitationDocument,
 } from "./schemas/project-invitation.schema.js";
 import {
   MemberRole,

@@ -8,12 +8,17 @@ import {
   ProjectMember,
   ProjectMemberSchema,
 } from "../members/schemas/project-member.schema.js";
+import {
+  ProjectInvitation,
+  ProjectInvitationSchema,
+} from "../invitations/schemas/project-invitation.schema.js";
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Project.name, schema: ProjectSchema },
       { name: ProjectMember.name, schema: ProjectMemberSchema },
+      { name: ProjectInvitation.name, schema: ProjectInvitationSchema },
     ]),
   ],
   controllers: [ProjectsController],
