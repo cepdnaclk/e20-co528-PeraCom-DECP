@@ -357,19 +357,19 @@ services:
     expose:
       - "4005"
 
-  # notification-service:
-  #   container_name: decp-notification-service
-  #   build:
-  #     context: .
-  #     dockerfile: ./services/notification-service/Dockerfile
-  #   env_file:
-  #     - ./services/notification-service/.env.prod
-  #   depends_on:
-  #     - kafka
-  #   networks:
-  #     - decp-network
-  #   expose:
-  #     - "4006"
+  notification-service:
+    container_name: decp-notification-service
+    build:
+      context: .
+      dockerfile: ./services/notification-service/Dockerfile
+    env_file:
+      - ./services/notification-service/.env.prod
+    depends_on:
+      - kafka
+    networks:
+      - decp-network
+    expose:
+      - "4006"
 
   # analytics-service:
   #   container_name: decp-analytics-service
