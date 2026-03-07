@@ -544,6 +544,7 @@ export class UsersService {
           email: true,
           role: true,
           reg_number: true,
+          profile_pic: true,
         },
       }),
 
