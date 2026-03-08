@@ -14,15 +14,12 @@ import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
 import { CorrelationId } from "../auth/decorators/correlation-id.decorator.js";
 import { ActorId } from "../auth/decorators/actor.decorator.js";
-import type { CreateUserDto } from "./dto/create-user.dto.js";
-import type { CreateBulkDto } from "./dto/create-bulk.dto.js";
-import type { BulkSuspendDto } from "./dto/suspend-bulk.dto.js";
-import type { UpdateProfileDto } from "./dto/update-profile.dto.js";
-import type {
-  UpdateRolesDto,
-  UpdateUserAdminDto,
-} from "./dto/update-admin.dto.js";
-import type { QueryUsersDto } from "./dto/query-users.dto.js";
+import { CreateUserDto } from "./dto/create-user.dto.js";
+import { CreateBulkDto } from "./dto/create-bulk.dto.js";
+import { BulkSuspendDto } from "./dto/suspend-bulk.dto.js";
+import { UpdateProfileDto } from "./dto/update-profile.dto.js";
+import { UpdateRolesDto, UpdateUserAdminDto } from "./dto/update-admin.dto.js";
+import { QueryUsersDto } from "./dto/query-users.dto.js";
 
 @Controller("users")
 export class UsersController {

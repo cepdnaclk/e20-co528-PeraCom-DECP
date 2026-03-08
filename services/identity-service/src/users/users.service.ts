@@ -521,12 +521,9 @@ export class UsersService {
     }
 
     // 2. Role filter
-    if (query.role) {
-      where.role = query.role;
-    }
+    if (query.role) where.role = query.role;
 
-    // 3. Only active users
-    where.is_active = true;
+    console.log(`Admin ${adminId} is fetching users with query:`, query);
 
     // 4. Fetch users with pagination and total count in a single transaction
     const [users, total] = await this.prisma.$transaction([

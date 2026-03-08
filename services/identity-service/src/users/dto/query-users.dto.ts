@@ -1,19 +1,28 @@
-import { IsOptional, IsNumberString, IsString } from "class-validator";
+import { Type } from "class-transformer";
+import { IsOptional, IsString, IsEnum, IsNumber } from "class-validator";
+
+export enum UserRole {
+  ADMIN = "ADMIN",
+  STUDENT = "STUDENT",
+  ALUMNI = "ALUMNI",
+}
 
 export class QueryUsersDto {
   @IsOptional()
-  @IsNumberString()
-  page?: string;
+  @Type(() => Number)
+  @IsNumber()
+  page?: number;
 
   @IsOptional()
-  @IsNumberString()
-  limit?: string;
+  @Type(() => Number)
+  @IsNumber()
+  limit?: number;
 
   @IsOptional()
   @IsString()
   search?: string;
 
   @IsOptional()
-  @IsString()
-  role?: string;
+  @IsEnum(UserRole)
+  role?: UserRole;
 }
