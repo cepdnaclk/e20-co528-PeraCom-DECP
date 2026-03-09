@@ -1,9 +1,8 @@
 import { otelSDK } from "./tracing.js";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module.js";
-import { connectProducer } from "@decp/event-bus";
 import { env } from "./config/validateEnv.config.js";
-import { ValidationPipe } from "@nestjs/common/pipes/index.js";
+import { ValidationPipe } from "@nestjs/common";
 import { TraceLoggingInterceptor } from "./trace-logging.interceptor.js";
 import { Logger } from "nestjs-pino";
 
@@ -28,16 +27,16 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
 
   // 6. The trace logging interceptor
   app.useGlobalInterceptors(new TraceLoggingInterceptor());
 
-  // 7. Initialize the Kafka shared event bus connection
-  await connectProducer([env.KAFKA_BROKER]);
-
-  // 8. Start the application
+  // 7. Start the application
   await app.listen(env.NODE_PORT);
 }
 
