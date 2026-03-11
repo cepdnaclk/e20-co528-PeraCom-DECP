@@ -417,4 +417,57 @@ export class NotificationProcessorService {
       );
     }
   }
+
+  // ========================================================================
+  // 1.7 HANDLE USER PROFILE UPDATED
+  // ========================================================================
+  async handleUserProfileUpdated(data: any) {
+    const recipientId = data.user_id;
+
+    this.logger.info(
+      { recipientId },
+      "Handling user profile updated event",
+    );
+
+    if (!recipientId) return;
+
+    // Step A: Check Preferences
+    const prefs = await this.getUserPreferences(recipientId);
+
+    // Step B: In-App Notification
+    if (prefs.channels.inApp) {
+      await this.notificationModel.create({
+        recipientId,
+        actorId: recipientId, // self-triggered
+        actionType: ActionType.SYSTEM_ALERT,
+        entityType: EntityType.USER,
+        entityId: recipientId,
+        metadata: {
+          message: "Your profile details have been successfully updated.",
+        },
+      });
+      this.logger.info({ recipientId }, "Created profile updated in-app notification");
+    }
+
+    // Step C: Email Dispatch
+    // Check if security notifications are opted into
+    if (prefs.categories.account_security) {
+      if (prefs.channels.email && data.email) {
+        await this.emailService.sendProfileUpdateEmail({
+          email: data.email,
+          name: `${data.first_name} ${data.last_name}`.trim(),
+        });
+        this.logger.info(
+          `[MOCK] Sending Profile Update Email to ${data.email} for user ${recipientId}`,
+        );
+      }
+    } else {
+      this.logger.debug(
+        { recipientId },
+        "User opted out of account security notifications. Dropping profile update email alert.",
+      );
+    }
+
+    this.logger.info({ recipientId }, "Successfully processed user profile updated event");
+  }
 }

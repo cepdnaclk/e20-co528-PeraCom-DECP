@@ -168,4 +168,17 @@ export class EmailService implements OnModuleInit {
 
     await this.sendMail(payload.email, subject, html);
   }
+
+  /* Function to send profile updated email */
+  async sendProfileUpdateEmail(payload: { email: string; name: string }) {
+    const subject = "Profile Updated Successfully - PeraCom DECP";
+
+    let html = this.loadTemplate("profile-updated");
+
+    html = html
+      .replaceAll("{{FULL_NAME}}", payload.name)
+      .replaceAll("{{EMAIL}}", payload.email);
+
+    await this.sendMail(payload.email, subject, html);
+  }
 }
