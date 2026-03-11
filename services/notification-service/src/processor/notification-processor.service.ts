@@ -181,4 +181,84 @@ export class NotificationProcessorService {
       "Successfully processed user creation event",
     );
   }
+
+  // ========================================================================
+  // 1.3 HANDLE BATCH USERS CREATED (Mass Onboarding)
+  // ========================================================================
+  async handleBatchUserCreated(users: any[], actorId?: string) {
+    this.logger.info(
+      { count: users.length, actorId },
+      "Processing bulk user onboarding",
+    );
+
+    if (!users || users.length === 0) return;
+
+    // 1. Bulk Prepare Preferences
+    const preferenceOps = users.map((user) => ({
+      updateOne: {
+        filter: { userId: user.user_id },
+        update: { $setOnInsert: { userId: user.user_id } },
+        upsert: true,
+      },
+    }));
+
+    // 2. Bulk Prepare In-App Alerts
+    const notificationDocs = users.map((user) => ({
+      recipientId: user.user_id,
+      actorId: actorId || "system", // Ensure actorId is logged/recorded
+      actionType: ActionType.SYSTEM_ALERT,
+      entityType: EntityType.USER,
+      entityId: "welcome",
+      metadata: {
+        message:
+          "Welcome to PeraCom DECP! We are excited to have you join our academic community.",
+      },
+    }));
+
+    try {
+      // Fire database operations in parallel
+      await Promise.all([
+        this.preferenceModel.bulkWrite(preferenceOps),
+        this.notificationModel.insertMany(notificationDocs),
+      ]);
+
+      this.logger.info(
+        "Successfully initialized preferences and in-app alerts for batch",
+      );
+
+      // 3. Email Dispatch (The "Gentle" Loop)
+      for (const user of users) {
+        if (!user.email) continue;
+
+        try {
+          // Check preferences lazily to ensure we don't spam if manually opted out somehow? 
+          // New users will have everything enabled.
+          await this.emailService.sendWelcomeEmail({
+            email: user.email,
+            name: `${user.first_name} ${user.last_name}`,
+            role: user.role,
+          });
+          // Small delay to avoid mailer rate limits
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        } catch (emailError: any) {
+          // Optimization Pattern: Log failed emails specifically with their user_id
+          this.logger.error(
+            {
+              error: emailError.message,
+              user_id: user.user_id,
+              email: user.email,
+            },
+            "Failed to send welcome email in batch processing",
+          );
+        }
+      }
+
+      this.logger.info("Successfully processed batch user creation event");
+    } catch (error) {
+      this.logger.error(
+        { error },
+        "Bulk onboarding failed partially or completely",
+      );
+    }
+  }
 }

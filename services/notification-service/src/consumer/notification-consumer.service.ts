@@ -74,6 +74,18 @@ export class NotificationConsumerService
           break;
         }
 
+        case "identity.batch_users.created": {
+          this.logger.info(
+            { count: event.data.count, actorId: event.actorId },
+            "New users batch created."
+          );
+          await this.processorService.handleBatchUserCreated(
+            event.data.users,
+            event.actorId
+          );
+          break;
+        }
+
         default:
           // We safely ignore events we don't care about.
           this.logger.warn(`Unhandled event type: ${event.eventType}`);
