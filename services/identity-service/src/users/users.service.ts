@@ -573,12 +573,31 @@ export class UsersService {
     correlationId: string,
     payload: UpdateRolesDto,
   ) {
-    // 1. Extract batch and role from payload
     const { batch, role } = payload;
 
     console.log(
       `Admin ${adminId} is updating roles for batch ${batch} to ${role}`,
     );
+
+    // 1. First, find the users we are about to change role for so we have their details for the event
+    const usersToChange = await this.prisma.user.findMany({
+      where: {
+        reg_number: { startsWith: batch.toLowerCase() },
+        is_active: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+      },
+    });
+
+    if (usersToChange.length === 0) {
+      throw new BadRequestException(
+        "No active users found for this batch prefix.",
+      );
+    }
 
     // 2. Update active users that belong to the provided batch prefix (e.g. E20 -> E20XXX).
     const result = await this.prisma.user.updateMany({
@@ -613,7 +632,12 @@ export class UsersService {
         batch,
         role,
         count: result.count,
-        users: result,
+        users: usersToChange.map((u) => ({
+          user_id: u.id,
+          email: u.email,
+          first_name: u.first_name,
+          last_name: u.last_name,
+        })),
       },
     };
     await publishEvent("identity.events", batchUpdateEvent);

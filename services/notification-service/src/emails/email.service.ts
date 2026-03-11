@@ -195,4 +195,17 @@ export class EmailService implements OnModuleInit {
 
     await this.sendMail(payload.email, subject, html);
   }
+
+  /* Function to send admin triggered bulk role updated email */
+  async sendBulkRoleUpdateEmail(payload: { email: string; name: string; role: string }) {
+    const subject = "Account Role Updated - PeraCom DECP";
+
+    let html = this.loadTemplate("bulk-role-update");
+
+    html = html
+      .replaceAll("{{FULL_NAME}}", payload.name)
+      .replaceAll("{{ROLE}}", payload.role);
+
+    await this.sendMail(payload.email, subject, html);
+  }
 }

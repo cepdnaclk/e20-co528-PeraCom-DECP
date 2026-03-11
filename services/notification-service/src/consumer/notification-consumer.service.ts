@@ -128,6 +128,19 @@ export class NotificationConsumerService
           break;
         }
 
+        case "identity.batch_users.updated": {
+          this.logger.info(
+            { count: event.data.count, batch: event.data.batch, role: event.data.role, actorId: event.actorId },
+            "Batch users role updated."
+          );
+          await this.processorService.handleBatchRoleUpdate(
+            event.data.role,
+            event.data.users,
+            event.actorId
+          );
+          break;
+        }
+
         default:
           // We safely ignore events we don't care about.
           this.logger.warn(`Unhandled event type: ${event.eventType}`);

@@ -524,4 +524,79 @@ export class NotificationProcessorService {
 
     this.logger.info({ recipientId }, "Successfully processed admin user updated event");
   }
+
+  // ========================================================================
+  // 1.9 HANDLE BATCH USERS ROLE UPDATED
+  // ========================================================================
+  async handleBatchRoleUpdate(role: string, users: any[], actorId?: string) {
+    this.logger.info(
+      { count: users.length, role, actorId },
+      "Processing batch user role update",
+    );
+
+    if (!users || users.length === 0) return;
+
+    // Action 1: Bulk create in-app notifications (Fast DB operation)
+    // We log these regardless of preferences for accurate history
+    const notificationDocs = users.map((user) => ({
+      recipientId: user.user_id,
+      actorId: actorId || "system", // Admin triggered
+      actionType: ActionType.SYSTEM_ALERT,
+      entityType: EntityType.USER, 
+      entityId: "role_update",
+      metadata: {
+        message: `Your account role has been updated to ${role} by administration.`,
+      },
+    }));
+
+    try {
+      await this.notificationModel.insertMany(notificationDocs);
+      this.logger.info("Successfully created in-app role update alerts for batch");
+      
+      const CHUNK_SIZE = 25; // Send 25 emails at a time
+      
+      // Action 2 & 3: Chunked Email Sending
+      for (let i = 0; i < users.length; i += CHUNK_SIZE) {
+        const chunk = users.slice(i, i + CHUNK_SIZE);
+        
+        await Promise.allSettled(
+          chunk.map(async (user) => {
+            if (!user.email) return;
+            
+            // Explicitly check preferences for each user in the batch
+            const prefs = await this.getUserPreferences(user.user_id);
+            if (prefs.channels.email && prefs.categories.account_security) {
+              return this.emailService.sendBulkRoleUpdateEmail({
+                email: user.email,
+                name: `${user.first_name} ${user.last_name}`.trim(),
+                role: role // The new role globally applied
+              }).then(() => {
+                this.logger.info(
+                  `[MOCK] Sending Bulk Role Update Email to ${user.email} for user ${user.user_id}`,
+                );
+              });
+            } else {
+              this.logger.debug(
+                { recipientId: user.user_id },
+                "User opted out of account security notifications. Dropping admin update email alert.",
+              );
+            }
+          })
+        );
+        
+        // Small delay to let the SMTP connection pool breathe between chunks
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      this.logger.info(
+        { count: users.length, role, actorId },
+        "Successfully processed batch user role update event",
+      );
+    } catch (error) {
+      this.logger.error(
+        { error },
+        "Batch role update processing failed partially or completely",
+      );
+    }
+  }
 }
