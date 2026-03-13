@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUrl,
   MaxLength,
 } from "class-validator";
 
@@ -22,6 +23,14 @@ export class UpdatePostDto {
   @IsString()
   @MaxLength(2000)
   content?: string;
+
+  @IsOptional()
+  @IsUrl({}, { each: true })
+  imageUrls?: string[];
+
+  @IsOptional()
+  @IsUrl()
+  videoUrl?: string;
 }
 
 export class RepostDto {

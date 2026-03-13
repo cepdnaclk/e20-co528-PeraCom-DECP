@@ -12,6 +12,7 @@ import {
   ParseIntPipe,
   Query,
   DefaultValuePipe,
+  Patch,
 } from "@nestjs/common";
 import { FilesInterceptor } from "@nestjs/platform-express";
 import { PostsService } from "./posts.service.js";
@@ -105,6 +106,7 @@ export class PostsController {
       },
     }),
   )
+  @Patch()
   async updatePost(
     @ActorId() actorId: string,
     @CorrelationId() correlationId: string,

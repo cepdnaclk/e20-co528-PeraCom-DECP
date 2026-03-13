@@ -19,7 +19,10 @@ import type {
   UpdatePostDto,
 } from "./dto/post.dto.js";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
-import { Reaction, type ReactionDocument } from "../reaction/schemas/reaction.schema.js";
+import {
+  Reaction,
+  type ReactionDocument,
+} from "../reaction/schemas/reaction.schema.js";
 
 @Injectable()
 export class PostsService {
@@ -423,6 +426,13 @@ export class PostsService {
     files: Express.Multer.File[] = [],
   ): Promise<Post> {
     const { postId, content } = payload;
+
+    console.log(
+      "UpdatePost called with payload:",
+      payload,
+      "and files:",
+      files.map((f) => f.originalname),
+    );
 
     // 1. Validate postId format
     if (!Types.ObjectId.isValid(postId)) {
