@@ -19,6 +19,7 @@ import type {
   UpdatePostDto,
 } from "./dto/post.dto.js";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
+import { Reaction, type ReactionDocument } from "../reaction/schemas/reaction.schema.js";
 
 @Injectable()
 export class PostsService {
@@ -28,6 +29,9 @@ export class PostsService {
 
     @InjectModel(Post.name)
     private readonly postModel: Model<PostDocument>,
+
+    @InjectModel(Reaction.name)
+    private readonly reactionModel: Model<ReactionDocument>,
 
     private readonly minioService: MinioService,
 
@@ -77,6 +81,31 @@ export class PostsService {
     const hasNextPage = posts.length > safeLimit;
     const resultPosts = hasNextPage ? posts.slice(0, safeLimit) : posts;
 
+    // 2. FETCH "MY REACTIONS"
+    // Collect all post IDs from the current page
+    const postIds = resultPosts.map((p) => p._id);
+
+    // Find all reactions by the current user for these specific posts
+    const myReactions = await this.reactionModel
+      .find({
+        postId: { $in: postIds },
+        userId: actorId,
+      })
+      .select("postId type")
+      .lean()
+      .exec();
+
+    // Create a Map for O(1) lookup: postId -> reactionType
+    const reactionMap = new Map(
+      myReactions.map((r) => [String(r.postId), r.type]),
+    );
+
+    // 3. MERGE REACTIONS INTO POST DATA
+    const finalData = resultPosts.map((post) => ({
+      ...post,
+      myReaction: reactionMap.get(String(post._id)) || null,
+    }));
+
     const nextCursor = hasNextPage
       ? String(resultPosts[resultPosts.length - 1]?._id)
       : null;
@@ -110,7 +139,7 @@ export class PostsService {
 
     // 7. Return feed payload
     return {
-      data: posts,
+      data: finalData,
       nextCursor,
     };
   }
@@ -175,7 +204,10 @@ export class PostsService {
     }
 
     // Rule 4: If no images or videos content must be provided
-    if (files.length === 0 && (!dto.content || dto.content.trim().length === 0)) {
+    if (
+      files.length === 0 &&
+      (!dto.content || dto.content.trim().length === 0)
+    ) {
       throw new BadRequestException(
         "Post must have content or at least one media attachment",
       );
@@ -441,7 +473,8 @@ export class PostsService {
         throw new BadRequestException("Only 1 video allowed");
 
       // Mark old media for deletion (we will delete these ONLY if the DB saves successfully)
-      if (post.images && post.images.length > 0) oldMediaToCleanup.push(...post.images);
+      if (post.images && post.images.length > 0)
+        oldMediaToCleanup.push(...post.images);
       if (post.video) oldMediaToCleanup.push(post.video);
 
       // Upload new images

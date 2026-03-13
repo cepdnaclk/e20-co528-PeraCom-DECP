@@ -5,10 +5,17 @@ import { PostsController } from "./posts.controller.js";
 import { PostsService } from "./posts.service.js";
 import { Post, PostSchema } from "./schemas/post.schema.js";
 import { MinioService } from "../minio/minio.service.js";
+import {
+  Reaction,
+  ReactionSchema,
+} from "../reaction/schemas/reaction.schema.js";
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
+    MongooseModule.forFeature([
+      { name: Post.name, schema: PostSchema },
+      { name: Reaction.name, schema: ReactionSchema },
+    ]),
   ],
   controllers: [PostsController],
   providers: [
