@@ -82,7 +82,7 @@ export class ReactionsService {
       });
 
       // 4. Return success message
-      return { success: true, message: "Reaction removed" };
+      return { newReaction: null, success: true, message: "Reaction removed" };
     }
 
     // SCENARIO B: The user is SWITCHING their reaction (e.g., LIKE -> HAHA)
@@ -126,7 +126,11 @@ export class ReactionsService {
       });
 
       // 4. Return success message
-      return { success: true, message: "Reaction updated" };
+      return {
+        newReaction: reactionType,
+        success: true,
+        message: "Reaction updated",
+      };
     }
 
     // SCENARIO C: The user has NEVER reacted to this post before.
@@ -173,7 +177,11 @@ export class ReactionsService {
       });
 
       // 6. Return success message
-      return { success: true, message: "Reaction added" };
+      return {
+        newReaction: reactionType,
+        success: true,
+        message: "Reaction added",
+      };
     } catch (error) {
       // ✨ THE CONCURRENCY FIX ✨
       // If two requests try to create the reaction at the exact same millisecond,

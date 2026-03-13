@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Post, UseGuards } from "@nestjs/common";
 import { ReactionsService } from "./reaction.service.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { ActorId } from "../auth/decorators/actor.decorator.js";

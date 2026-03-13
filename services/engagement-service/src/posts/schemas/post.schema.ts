@@ -7,7 +7,7 @@ export enum ReactionType {
   SUPPORT = "SUPPORT", // LinkedIn's "Care"
   LOVE = "LOVE",
   HAHA = "HAHA",
-  SAD = "SAD",
+  INSIGHTFUL = "INSIGHTFUL",
 }
 
 export type PostDocument = Post & Document;
@@ -37,7 +37,7 @@ export class Post {
       SUPPORT: 0,
       LOVE: 0,
       HAHA: 0,
-      SAD: 0,
+      INSIGHTFUL: 0,
     },
   })
   reactionCounts!: Record<ReactionType, number>;
