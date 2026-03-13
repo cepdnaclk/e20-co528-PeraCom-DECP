@@ -1,10 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, type OnModuleInit } from "@nestjs/common";
 import { Client } from "minio";
 import { env } from "../config/validateEnv.config.js";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 
 @Injectable()
-export class MinioService {
+export class MinioService implements OnModuleInit {
   private minioClient: Client;
 
   constructor(
@@ -21,32 +21,60 @@ export class MinioService {
     });
   }
 
-  async uploadFile(
-    bucket: string,
-    objectName: string,
-    buffer: Buffer,
-    mimeType: string,
-  ) {
+  // This runs automatically when the module starts
+  async onModuleInit() {
+    await this.setupPublicBucket(env.MINIO_BUCKET_NAME);
+  }
+
+  private async setupPublicBucket(bucketName: string) {
+    try {
+      // 1. Create bucket if it doesn't exist
+      const exists = await this.minioClient.bucketExists(bucketName);
+      if (!exists) {
+        await this.minioClient.makeBucket(bucketName);
+        this.logger.info({ bucketName }, "Created missing Minio bucket");
+      }
+
+      // 2. Define the Read-Only policy for public access
+      const policy = {
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: { AWS: ["*"] },
+            Action: ["s3:GetObject"],
+            Resource: [`arn:aws:s3:::${bucketName}/*`],
+          },
+        ],
+      };
+
+      // 3. Apply the policy
+      await this.minioClient.setBucketPolicy(
+        bucketName,
+        JSON.stringify(policy),
+      );
+      this.logger.info({ bucketName }, "Applied public read policy to bucket");
+    } catch (error) {
+      this.logger.error({ error }, "Failed to automate Minio bucket setup");
+    }
+  }
+
+  async uploadFile(objectName: string, buffer: Buffer, mimeType: string) {
     await this.minioClient.putObject(
-      bucket,
+      env.MINIO_BUCKET_NAME,
       objectName,
       buffer,
       buffer.length,
-      {
-        "Content-Type": mimeType,
-      },
+      { "Content-Type": mimeType },
     );
 
-    return `${env.MINIO_PUBLIC_URL}/${bucket}/${objectName}`;
+    return `${env.MINIO_PUBLIC_URL}/${env.MINIO_BUCKET_NAME}/${objectName}`;
   }
 
   async deleteFile(bucketName: string, objectName: string): Promise<void> {
     try {
-      // The official Minio SDK method for deleting files
       await this.minioClient.removeObject(bucketName, objectName);
     } catch (error) {
-      // We log the error but don't crash the app,
-      // as file deletion failures shouldn't stop the user experience.
       this.logger.error(
         { error, objectName },
         "Failed to delete object from Minio",

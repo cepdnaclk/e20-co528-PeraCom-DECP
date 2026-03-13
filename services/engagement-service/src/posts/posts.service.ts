@@ -219,9 +219,8 @@ export class PostsService {
     try {
       // 4. Upload images
       for (const file of imageFiles) {
-        const objectName = `posts/${Date.now()}-${file.originalname}`;
+        const objectName = `images/${Date.now()}_${file.originalname}`;
         const url = await this.minioService.uploadFile(
-          "posts-bucket",
           objectName,
           file.buffer,
           file.mimetype,
@@ -237,9 +236,8 @@ export class PostsService {
           throw new BadRequestException("Invalid video file");
         }
 
-        const objectName = `posts/${Date.now()}-${file.originalname}`;
+        const objectName = `videos/${Date.now()}_${file.originalname}`;
         video = await this.minioService.uploadFile(
-          "posts-bucket",
           objectName,
           file.buffer,
           file.mimetype,
@@ -391,9 +389,8 @@ export class PostsService {
       if (imageFiles.length > 0) {
         const uploadedImages: string[] = [];
         for (const file of imageFiles) {
-          const objectName = `posts/${Date.now()}-${file.originalname}`;
+          const objectName = `images/${Date.now()}-${file.originalname}`;
           const url = await this.minioService.uploadFile(
-            "posts-bucket",
             objectName,
             file.buffer,
             file.mimetype,
@@ -408,9 +405,8 @@ export class PostsService {
       // Upload new video
       if (videoFiles.length === 1) {
         const file: any = videoFiles[0];
-        const objectName = `posts/${Date.now()}-${file.originalname}`;
+        const objectName = `videos/${Date.now()}-${file.originalname}`;
         const videoUrl = await this.minioService.uploadFile(
-          "posts-bucket",
           objectName,
           file.buffer,
           file.mimetype,
