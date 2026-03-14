@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 220 25% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
+
+    --primary: 174 62% 38%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 25% 10%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 174 62% 95%;
+    --accent-foreground: 174 62% 25%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 174 62% 38%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 220 25% 11%;
+    --sidebar-foreground: 220 14% 80%;
+    --sidebar-primary: 174 62% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 16%;
+    --sidebar-accent-foreground: 220 14% 90%;
+    --sidebar-border: 220 20% 18%;
+    --sidebar-ring: 174 62% 48%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 100% 52%;
+    --info-foreground: 0 0% 100%;
+
+    --nav-active: 174 62% 38%;
+    --nav-active-foreground: 0 0% 100%;
+
+    --online: 142 71% 45%;
+    --badge-student: 210 100% 52%;
+    --badge-alumni: 280 67% 52%;
+    --badge-admin: 0 72% 51%;
+  }
+
+  .dark {
+    --background: 220 25% 7%;
+    --foreground: 220 14% 90%;
+
+    --card: 220 25% 10%;
+    --card-foreground: 220 14% 90%;
+
+    --popover: 220 25% 10%;
+    --popover-foreground: 220 14% 90%;
+
+    --primary: 174 62% 48%;
+    --primary-foreground: 220 25% 7%;
+
+    --secondary: 220 20% 16%;
+    --secondary-foreground: 220 14% 90%;
+
+    --muted: 220 20% 16%;
+    --muted-foreground: 220 10% 55%;
+
+    --accent: 174 62% 15%;
+    --accent-foreground: 174 62% 70%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 174 62% 48%;
+
+    --sidebar-background: 220 25% 6%;
+    --sidebar-foreground: 220 14% 75%;
+    --sidebar-primary: 174 62% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 12%;
+    --sidebar-accent-foreground: 220 14% 85%;
+    --sidebar-border: 220 20% 14%;
+    --sidebar-ring: 174 62% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .skeleton-pulse {
+    @apply animate-pulse bg-muted rounded;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+}
