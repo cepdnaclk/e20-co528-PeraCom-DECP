@@ -190,4 +190,73 @@ export class EngagementNotificationService {
       );
     }
   }
+
+  // ========================================================================
+  // 2.3 HANDLE COMMENT RECEIVED (Notify Post Author)
+  // ========================================================================
+  async handleCommentCreated(actorId: string, data: any) {
+    const recipientId = data.post_author_id; // The author of the original post
+
+    this.logger.info(
+      {
+        postId: data.post_id,
+        commentId: data.comment_id,
+        actorId,
+        recipientId,
+      },
+      "Handling comment created event",
+    );
+
+    // 1. Guard Clause: Missing recipient data
+    if (!recipientId) {
+      this.logger.warn(
+        { payload: data },
+        "Dropped comment notification: post_author_id is missing from payload",
+      );
+      return;
+    }
+
+    // 2. Guard Clause: The "Self-Comment" Check
+    // Don't notify the user if they are commenting on their own post!
+    if (actorId === recipientId) {
+      this.logger.debug(
+        { actorId, postId: data.post_id },
+        "User commented on their own post. Dropping notification.",
+      );
+      return;
+    }
+
+    // 3. Check User Preferences
+    const prefs = await this.preferenceService.getPreferences(recipientId);
+
+    // Note: Adjust 'social_engagement' if your preference schema uses a different name
+    // If you don't have granular categories yet, you can skip this category check.
+
+    // 4. Create In-App Notification
+    if (prefs.channels.inApp) {
+      try {
+        await this.notificationModel.create({
+          recipientId,
+          actorId,
+          actionType: ActionType.COMMENTED, // Ensure POST_COMMENTED exists in your ActionType Enum!
+          entityType: EntityType.POST,
+          entityId: data.post_id,
+          metadata: {
+            message: "Someone commented on your post.",
+            comment_id: data.comment_id,
+          },
+        });
+
+        this.logger.info(
+          { recipientId, actorId, postId: data.post_id },
+          "Successfully created comment in-app notification",
+        );
+      } catch (error) {
+        this.logger.error(
+          { error, recipientId, actorId },
+          "Failed to create comment in-app notification",
+        );
+      }
+    }
+  }
 }
