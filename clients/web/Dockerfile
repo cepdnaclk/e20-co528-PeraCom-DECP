@@ -15,6 +15,22 @@ RUN npm install
 # Copy the rest of the application code to the working directory
 COPY clients/web ./
 
+# Declare build arguments
+ARG VITE_API_URL
+ARG VITE_GOOGLE_CLIENT_ID
+ARG VITE_MAX_ALLOWED_FILES
+ARG VITE_MAX_IMAGE_SIZE_MB
+ARG VITE_MAX_ALLOWED_CHARACTERS
+ARG VITE_FEED_LIMIT
+
+# Make them available as env vars during build
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+ENV VITE_MAX_ALLOWED_FILES=$VITE_MAX_ALLOWED_FILES
+ENV VITE_MAX_IMAGE_SIZE_MB=$VITE_MAX_IMAGE_SIZE_MB
+ENV VITE_MAX_ALLOWED_CHARACTERS=$VITE_MAX_ALLOWED_CHARACTERS
+ENV VITE_FEED_LIMIT=$VITE_FEED_LIMIT
+
 # Build the application (this will create the dist directory with the compiled code)
 RUN npm run build
 
