@@ -418,5 +418,5 @@ services:
     networks:
       - decp-network
     ports:
-      - "8080:80"
+      - "80:80"
     restart: always

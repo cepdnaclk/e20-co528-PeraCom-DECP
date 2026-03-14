@@ -15,8 +15,6 @@ RUN npm install
 # Copy the rest of the application code to the working directory
 COPY clients/web ./
 
-RUN ls -la
-
 # Build the application (this will create the dist directory with the compiled code)
 RUN npm run build
 
@@ -28,6 +26,9 @@ FROM nginx:stable-alpine
 
 # We copy ONLY the final built files from the first stage
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy the custom Nginx configuration file to the appropriate location in the container:
+COPY clients/web/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 80 for the Nginx server
 EXPOSE 80
