@@ -1,51 +1,950 @@
-<!doctype html>
-<html lang="en" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DECP — Department Engagement &amp; Career Platform</title>
-    <meta
-      name="description"
-      content="A cloud-native university platform connecting students, and alumni. Built with microservices, real-time messaging, and event-driven architecture."
-    />
-    <meta name="PeraCom_DECP" content="University of Peradeniya — CO528" />
+<!DOCTYPE html>
+<html lang="en">
 
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
-    <meta
-      property="og:title"
-      content="DECP — Department Engagement &amp; Career Platform"
-    />
-    <meta
-      name="twitter:title"
-      content="DECP — Department Engagement &amp; Career Platform"
-    />
-    <meta
-      property="og:description"
-      content="A cloud-native university platform connecting students, alumni, and academia. Built with microservices, real-time messaging, and event-driven architecture."
-    />
-    <meta
-      name="twitter:description"
-      content="A cloud-native university platform connecting students, alumni, and academia. Built with microservices, real-time messaging, and event-driven architecture."
-    />
-    <meta
-      property="og:image"
-      content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4a3f66c7-1949-4370-97ae-e695514fe51d/id-preview-f9969a9b--cdee9378-d878-4f72-b42b-5637972df2da.lovable.app-1773592487779.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4a3f66c7-1949-4370-97ae-e695514fe51d/id-preview-f9969a9b--cdee9378-d878-4f72-b42b-5637972df2da.lovable.app-1773592487779.png"
-    />
-    <script type="module" crossorigin src="/assets/index-Ce7XN-eX.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BnAPwlbU.css" />
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>SkyT</title>
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+
+  <!-- Favicons -->
+  <link href="assets/img/favicon.ico" rel="icon">
+  <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Raleway:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
+  <link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
+  <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+
+  <!-- Main CSS File -->
+  <link href="assets/css/main.css" rel="stylesheet">
+
+  <style>
+    html {
+      overflow: auto;
+      scrollbar-width: none; /* Firefox */
+    }
+    body {
+      overflow: auto;
+    }
+    /* Chrome, Edge, Safari */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+
+</head>
+
+<body class="index-page">
+
+  <header id="header" class="header d-flex align-items-center fixed-top">
+    <div class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
+
+      <a href="index.html" class="logo d-flex align-items-center">
+        
+        <h1 class="sitename">SkyT</h1>
+      </a>
+
+      <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="#hero" class="active">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#details"><span>Development</span></a></li>
+          <li><a href="#pricing">Demo</a></li>
+          <li><a href="#gallery">Gallery</a></li>
+          <li><a href="#team">Team</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
+
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Hero Section -->
+  <section id="hero" class="hero section dark-background position-relative overflow-hidden">
+  <!-- Background Video -->
+  <video class="hero-bg" autoplay muted loop playsinline>
+    <source src="assets/img/tea.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <div class="container position-relative z-2">
+    <div class="row gy-4 justify-content-between">
+      <div class="col-lg-4 order-lg-last hero-img" data-aos="zoom-out" data-aos-delay="100">
+        <img src="assets/img/Logofull.png" class="img-fluid animated" alt="">
+      </div>
+
+      <div class="col-lg-6 d-flex flex-column justify-content-center" data-aos="fade-in">
+        <h1><span>SkyT</span> <br/>Smarter Skies, Greener Growth </h1>
+        <p>A drone based crop management system tailored for Tea Plantations</p>
+        <div class="d-flex">
+          <a href="https://e20-3yp-skyt.pages.dev/" class="btn-get-started">Get Started</a>
+          <a href="https://youtu.be/4Rkz7F0_JOQ" class="glightbox btn-watch-video d-flex align-items-center">
+            <i class="bi bi-play-circle"></i><span>Watch Video</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero Waves -->
+  <svg class="hero-waves position-absolute bottom-0 w-100" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none">
+    <defs>
+      <path id="wave-path" d="M-160 44c30 0 58-18 88-18s58 18 88 18 58-18 88-18 58 18 88 18v44h-352z"></path>
+    </defs>
+    <g class="wave1"><use xlink:href="#wave-path" x="50" y="3"></use></g>
+    <g class="wave2"><use xlink:href="#wave-path" x="50" y="0"></use></g>
+    <g class="wave3"><use xlink:href="#wave-path" x="50" y="9"></use></g>
+  </svg>
+</section>
+
+
+    <!-- About Section -->
+    <section id="about" class="about section parallax-section">
+        <div class="parallax-container">
+          <img src="assets/img/drone.png" alt="Drone over tea plantation" class="parallax-image" loading="lazy">
+        </div>
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="row align-items-xl-center gy-5">
+
+          <div class="col-xl-5 content">
+            <h3>Sky T</h3>
+            <h2>Drone Based Crop Management system</h2>
+            <p>Tea plantation management faces challenges due to inefficient monitoring of vast areas. SkyT addresses this by leveraging drones and IoT devices for sensor data (soil quality, temperature, humidity) 
+              and high-resolution imagery, automating data collection and visualization for proactive crop management.</p>
+            <a href="#" class="read-more"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
+          </div>
+
+          <div class="col-xl-7">
+            <div class="row gy-4 icon-boxes">
+
+              <div class="col-md-6" data-aos="fade-up" data-aos-delay="200">
+                <div class="icon-box">
+                  <i class="bi bi-wifi"></i>
+                  <h3>IoT Sensors</h3>
+                  <p>Deployed across tea estate lots, this ESP32-based sensor unit monitors soil nutrients (NPK, pH) via RS485 sensors, ambient humidity with a DHT11 sensor and effectively sends data to the drone to send to backend. 
+                    It runs on both solar and battery power and supports BLE activation for easy field configuration and data access.</p>
+                </div>
+              </div> <!-- End Icon Box -->
+
+              <div class="col-md-6" data-aos="fade-up" data-aos-delay="300">
+                <div class="icon-box">
+                  <i class="bi bi-command"></i>
+                  <h3>Automated Drones</h3>
+                  <p>A Raspberry Pi-powered autonomous drone captures aerial images of tea estate lots and collects data from IoT sensor units via BLE. 
+                    It enables remote monitoring and supports intelligent analysis for precision crop management.</p>
+                </div>
+              </div> <!-- End Icon Box -->
+
+              <div class="col-md-6" data-aos="fade-up" data-aos-delay="400">
+                <div class="icon-box">
+                  <i class="bi bi-speedometer2"></i>
+                  <h3>Web Dashboard</h3>
+                  <p>Built using React.js and Material UI, the dashboard offers role-based access with real-time visualization of 
+                    sensor data and aerial imagery, enabling efficient monitoring and decision-making for tea estate management.</p>
+                </div>
+              </div> <!-- End Icon Box -->
+
+              <div class="col-md-6" data-aos="fade-up" data-aos-delay="500">
+                <div class="icon-box">
+                  <i class="bi bi-cpu"></i>
+                  <h3>Cloud Backend</h3>
+                  <p>Hosted on AWS for scalability and reliability, the backend architecture features decoupled services: 
+                    a Flask-based API handles IoT data ingestion, while a TypeScript-powered backend supports the web dashboard. 
+                    All sensor readings, imagery, and user data are securely managed in a centralized MySQL database, 
+                    ensuring efficient data access and integration.</p>
+                </div>
+              </div> <!-- End Icon Box -->
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section><!-- /About Section -->
+
+    <!-- Features Section -->
+    <section id="features" class="features section">
+
+    <div class="container">
+    <div class="row gy-4">
+
+      <!-- Modern Frontend -->
+      <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="features-item text-center feature-toggle" onclick="toggleFeature(this)">
+          <img src="assets/img/brands/react.png" alt="React Logo" style="width: 60px; margin-bottom: 10px; padding-left: 5%;" loading="lazy">
+          <!-- <i class="bi bi-phone" style="color: #ffbb2c; font-size: 2rem;"></i> -->
+          <h3>Modern Frontend</h3>
+          <p class="feature-desc" style="display: none;">
+            React, TypeScript & Vite for fast modular UI with Material UI and maps integration.
+          </p>
+        </div>
+      </div>
+
+      <!-- Robust Backend -->
+      <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="features-item text-center feature-toggle" onclick="toggleFeature(this)">
+          <img src="assets/img/brands/node.png" alt="Node.js Logo" style="width: 60px; margin-bottom: 10px;padding-left: 5%;" loading="lazy">
+          <!-- <i class="bi bi-server" style="color: #5578ff; font-size: 2rem;"></i> -->
+          <h3>Robust Backend</h3>
+          <p class="feature-desc" style="display: none;">
+            Node.js + Express in TypeScript with REST API, JWT Auth, deployed on AWS EC2.
+          </p>
+        </div>
+      </div>
+
+      <!-- Optimized Database -->
+      <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="300">
+        <div class="features-item text-center feature-toggle" onclick="toggleFeature(this)">
+          <img src="assets/img/brands/db.png" alt="MySQL Logo" style="width: 60px; margin-bottom: 10px;padding-left: 5%;" loading="lazy">
+          <!-- <i class="bi bi-database" style="color: #e80368; font-size: 2rem;"></i> -->
+          <h3>Optimized Database</h3>
+          <p class="feature-desc" style="display: none;">
+            MySQL with connection pooling, relational integrity, JSON optimization, indexed queries.
+          </p>
+        </div>
+      </div>
+
+      <!-- Cloud & DevOps -->
+      <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="400">
+        <div class="features-item text-center feature-toggle" onclick="toggleFeature(this)">
+          <img src="assets/img/brands/cloud.png" alt="Cloudflare Logo" style="width: 60px; margin-bottom: 10px;padding-left: 5%;" loading="lazy">
+          <!-- <i class="bi bi-cloud-arrow-up" style="color: #e361ff; font-size: 2rem;"></i> -->
+          <h3>Cloud & DevOps</h3>
+          <p class="feature-desc" style="display: none;">
+            Cloudflare hosting, GitHub Actions CI/CD, email notifications, external API integration.
+          </p>
+        </div>
+      </div>
+
+      <!-- Authentication & Security -->
+      <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="500">
+        <div class="features-item text-center feature-toggle" onclick="toggleFeature(this)">
+          <i class="bi bi-shield-lock" style="color: #47aeff; font-size: 2rem;"></i>
+          <h3>Authentication & Security</h3>
+          <p class="feature-desc" style="display: none;">
+            JWT-based authentication, role-based access, secure file uploads, middleware protection.
+          </p>
+        </div>
+      </div>
+
+      <!-- Real-Time & Alerts -->
+      <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="600">
+        <div class="features-item text-center feature-toggle" onclick="toggleFeature(this)">
+          <i class="bi bi-broadcast" style="color: #ffa76e; font-size: 2rem;"></i>
+          <h3>Real-Time & Alerts</h3>
+          <p class="feature-desc" style="display: none;">
+            Live dashboards, token/session validation, sensor alerts, notification system.
+          </p>
+        </div>
+      </div>
+
+      <!-- Advanced Data Handling -->
+      <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="700">
+        <div class="features-item text-center feature-toggle" onclick="toggleFeature(this)">
+          <i class="bi bi-bar-chart-line" style="color: #11dbcf; font-size: 2rem;"></i>
+          <h3>Advanced Data</h3>
+          <p class="feature-desc" style="display: none;">
+            Time-series filtering, task concurrency, image compression, and structured storage.
+          </p>
+        </div>
+      </div>
+
+      <!-- Testing & Docs -->
+      <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="800">
+        <div class="features-item text-center feature-toggle" onclick="toggleFeature(this)">
+          <i class="bi bi-journal-check" style="color: #4233ff; font-size: 2rem;"></i>
+          <h3>Testing & Docs</h3>
+          <p class="feature-desc" style="display: none;">
+            Comprehensive REST API docs with Jest + Supertest automated test cases.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  </section><!-- /Features Section -->
+
+    <!-- Stats Section -->
+     <section id="stats" class="stats section light-background">
+
+  <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+    <div class="row gy-4">
+
+      <!-- Drones Deployed -->
+      <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+        <i class="bi bi-command"></i>
+        <div class="stats-item">
+          <span data-purecounter-start="0" data-purecounter-end="3" data-purecounter-duration="1" class="purecounter"></span>
+          <p>Drones Deployed</p>
+        </div>
+      </div>
+
+      <!-- API Requests Handled -->
+      <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+        <i class="bi bi-server"></i>
+        <div class="stats-item">
+          <span data-purecounter-start="0" data-purecounter-end="85" data-purecounter-duration="1" class="purecounter"></span>
+          <p>API Requests Handled</p>
+        </div>
+      </div>
+
+      <!-- Real-Time Alerts Sent -->
+      <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+        <i class="bi bi-bell-fill"></i>
+        <div class="stats-item">
+          <span data-purecounter-start="0" data-purecounter-end="43" data-purecounter-duration="1" class="purecounter"></span>
+          <p>Real-Time Alerts Sent</p>
+        </div>
+      </div>
+
+      <!-- CI/CD Deployments -->
+      <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+        <i class="bi bi-cloud-upload-fill"></i>
+        <div class="stats-item">
+          <span data-purecounter-start="0" data-purecounter-end="68" data-purecounter-duration="1" class="purecounter"></span>
+          <p>CI/CD Deployments</p>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+    <!-- /Stats Section -->
+
+    <!-- Details Section -->
+    <section id="details" class="details section">
+        
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Details</h2>
+        <div><span>Check Our</span> <span class="description-title">Details</span></div>
+      </div><!-- End Section Title -->
+
+      <div class="container">
+
+        <div class="row gy-4 align-items-center features-item">
+          <div class="col-md-5 d-flex align-items-center" data-aos="zoom-out" data-aos-delay="100">
+            <img src="assets/img/site.svg" class="img-fluid" alt="" loading="lazy">
+          </div>
+          <div class="col-md-7" data-aos="fade-up" data-aos-delay="100">
+            <h3>User Friendly Responsive Dashboard</h3>
+            <p class="fst-italic">
+              The dashboard provides an intuitive, responsive interface tailored for monitoring tea estates, offering clear insights into environmental and sensor data.
+            </p>
+          <ul>
+            <li><i class="bi bi-check"></i><span>Estates are displayed individually; clicking an estate reveals its subdivided lots.</span></li>
+            <li><i class="bi bi-check"></i><span>Each lot displays its own soil sensor readings, including NPK, pH, and humidity levels.</span></li>
+            <li><i class="bi bi-check"></i><span>Sensor data is periodically logged and visualized through interactive graphs for trend analysis.</span></li>
+            <li><i class="bi bi-check"></i><span>Current temperature readings and time-stamped aerial images of each lot are also available for detailed observation.</span></li>
+            <li><i class="bi bi-check"></i><span>Role-based access control: Managers have elevated permissions to manage estates and schedule drone missions.</span></li>
+            <li><i class="bi bi-check"></i><span>Authorized managers can trigger automated drone flights to capture real-time sensor data and aerial imagery of selected lots.</span></li>
+            </ul>
+          </div>
+        </div><!-- Features Item -->
+
+        <div class="row gy-4 align-items-center features-item even">
+          <div class="col-md-5 order-1 order-md-2 d-flex align-items-center" data-aos="zoom-out" data-aos-delay="200">
+            <img src="assets/img/dronebg.svg" class="img-fluid" alt="" loading="lazy">
+          </div>
+          <div class="col-md-7 order-2 order-md-1" data-aos="fade-up" data-aos-delay="200">
+            <h3>Autonomous Drone Integration</h3>
+            <p class="fst-italic">
+              A lightweight yet powerful drone platform equipped for smart aerial imagery and sensor integration in tea plantations.
+            </p>
+            <ul>
+              <li><i class="bi bi-check"></i><span>The drone is powered by a <strong>Raspberry Pi 4</strong> with an integrated <strong>Pi Camera Module</strong> for capturing high-resolution aerial imagery.</span></li>
+              <li><i class="bi bi-check"></i><span>It runs the <strong>PX4 autopilot stack</strong> on <strong>ArduPilot with ChibiOS</strong> for real-time, reliable flight control and autonomous mission execution.</span></li>
+              <li><i class="bi bi-check"></i><span>Drone communication and control are managed via <strong>MAVSDK</strong>, enabling seamless coordination with the cloud-based dashboard and ground station.</span></li>
+              <li><i class="bi bi-check"></i><span>The drone collects environmental data mid-flight using <strong>Bluetooth Low Energy (BLE)</strong> to connect with in-field IoT sensors.</span></li>
+              <li><i class="bi bi-check"></i><span>Captured data includes aerial imagery and real-time sensor metrics like soil temperature and humidity, mapped and stored with accurate timestamps.</span></li>
+            </ul>
+
+          </div>
+        </div><!-- Features Item -->
+
+        <div class="row gy-4 align-items-center features-item">
+          <div class="col-md-5 d-flex align-items-center" data-aos="zoom-in">
+            <img src="assets/img/schematic_design.png" class="img-fluid" alt="" loading="lazy">
+          </div>
+          <div class="col-md-7" data-aos="fade-up">
+            <h3>Hardware & System Design</h3>
+            <p>Our system features modular and a robust hardware sensor nodes, 
+              ensuring reliable sensor integration and environmental monitoring across tea estates.</p>
+            <ul>
+              <li><i class="bi bi-check"></i><span>ESP32-based sensor node equipped with <strong>Modbus RS485 NPK & pH sensors</strong> and a <strong>DHT11</strong> humidity/temperature sensor.</span></li>
+              <li><i class="bi bi-check"></i><span>Power-efficient design with <strong>solar and battery</strong> support, activated via <strong>
+                Bluetooth Low Energy (BLE)</strong> for remote updates.</span></li>
+              <li><i class="bi bi-check"></i><span>Custom-designed ESP32 schematics integrating RS485 soil sensors and DHT11 module for environmental tracking.</span></li>
+              <li><i class="bi bi-check"></i><span>Level shifters and protection circuits ensure safe interfacing with Modbus peripherals.</span></li>
+              <li><i class="bi bi-check"></i><span>Optimized for low-power consumption, remote wake-up, and efficient signal routing.</span></li>
+            </ul>
+            
+          </div>
+        </div><!-- Features Item -->
+
+        <div class="row gy-4 align-items-center features-item even">
+          <div class="col-md-5 order-1 order-md-2 d-flex align-items-center" data-aos="zoom-out">
+            <img src="assets/img/sensor.svg" class="img-fluid" alt="" loading="lazy">
+          </div>
+          <div class="col-md-7 order-2 order-md-1" data-aos="fade-up">
+            <h3>3D Model & Enclosure Design</h3>
+            <p class="fst-italic">
+              Durable and compact enclosures ensure optimal protection and field deployment readiness of both sensor nodes and drone payload modules.
+            </p>
+            <ul>
+              <li><i class="bi bi-check"></i><span>CAD-modeled enclosures designed for ESP32 sensor units with ports for RS485, BLE antenna, and solar input.</span></li>
+              <li><i class="bi bi-check"></i><span>Custom-designed drone chassis accommodates Pi Camera, Pi 4, BLE antenna, and onboard batteries securely.</span></li>
+              <li><i class="bi bi-check"></i><span>Weather-resistant material used for long-term deployment in varying tea estate environments.</span></li>
+            </ul>
+          </div>
+        </div><!-- Features Item -->
+
+      </div>
+
+    </section><!-- /Details Section -->
+    <!-- Product Demo -->
+     <section id="pricing" class="pricing section">
+
+      <div class="container section-title" data-aos="fade-up">
+    <h2>Sky T</h2>
+    <div><span>Explore Our</span> <span class="description-title">Product</span></div>
+  </div><!-- End Section Title -->
+
+  <div class="container">
+    <div class="row gy-4">
+
+      <!-- Manual Stable Flight -->
+      <div class="col" data-aos="zoom-in" data-aos-delay="100">
+        <div class="pricing-item">
+          <h3>Product Demo</h3>
+          <p class="description">Sky T is a fully automated drone system built for tea plantations. 
+            This demo showcases its seamless flight, sensor data collection, and real-time imaging capabilities—enabling 
+            efficient crop monitoring, and smarter field management.</p>
+          <!-- <video controls class="w-100 rounded mb-3">
+            <source src="https://www.youtube.com/shorts/H0zSdlDy3xs?feature=share" type="video/mp4">
+            Your browser does not support the video tag.
+          </video> -->
+          <iframe 
+            class="w-100 rounded mb-3"
+            height="630"
+            src="https://www.youtube.com/embed/_puyaP26QAM"
+            title="Sky T Product Demo"
+            frameborder="0"
+            allowfullscreen>
+          </iframe>
+        </div>
+      </div>
+
+    </div>
+
+    </section>
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing section">
+
+      <div class="container section-title" data-aos="fade-up">
+    <h2>Flight Tests</h2>
+    <div><span>Explore Our</span> <span class="description-title">Real-World Tests</span></div>
+  </div><!-- End Section Title -->
+
+  <div class="container">
+    <div class="row gy-4">
+
+      <!-- Manual Stable Flight -->
+      <div class="col-lg-4" data-aos="zoom-in" data-aos-delay="100">
+        <div class="pricing-item">
+          <h3>Manual Stable Flight</h3>
+          <p class="description">Initial stability testing under manual control to ensure responsive handling.</p>
+          <!-- <video controls class="w-100 rounded mb-3">
+            <source src="https://www.youtube.com/shorts/H0zSdlDy3xs?feature=share" type="video/mp4">
+            Your browser does not support the video tag.
+          </video> -->
+          <iframe 
+            class="w-100 rounded mb-3"
+            height="630"
+            src="https://www.youtube.com/embed/H0zSdlDy3xs"
+            title="Autonomous Sensor & Imaging"
+            frameborder="0"
+            allowfullscreen>
+          </iframe>
+
+          <ul>
+            <li><i class="bi bi-check"></i> <span>Manual RC control over short distances</span></li>
+            <li><i class="bi bi-check"></i> <span>Good altitude hold and balance checks</span></li>
+            <li><i class="bi bi-check"></i> <span>Failsafe landing tested</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Autonomous Stable Flight -->
+      <div class="col-lg-4" data-aos="zoom-in" data-aos-delay="200">
+        <div class="pricing-item featured">
+          <p class="popular">Featured</p>
+          <h3>Autonomous Stable Flight</h3>
+          <p class="description">Autopilot mode flight with PX4 + ArduPilot to verify GPS path tracking.</p>
+          <!-- <video controls class="w-100 rounded mb-3">
+            <source src="assets/img/flighttest/autonomous-stable.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video> -->
+          <iframe 
+            class="w-100 rounded mb-3"
+            height="630"
+            src="https://www.youtube.com/embed/yMGoDw3hVJk"
+            title="Autonomous Sensor & Imaging"
+            frameborder="0"
+            allowfullscreen>
+          </iframe>
+          <ul>
+            <li><i class="bi bi-check"></i> <span>PX4 mission execution tested</span></li>
+            <li><i class="bi bi-check"></i> <span>Stable GPS lock and navigation</span></li>
+            <li><i class="bi bi-check"></i> <span>Return-to-launch validated</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Autonomous Sensor + Image Capture -->
+      <div class="col-lg-4" data-aos="zoom-in" data-aos-delay="300">
+        <div class="pricing-item">
+          <h3>Autonomous Sensor & Imaging</h3>
+          <p class="description">Fully autonomous drone flight collecting BLE sensor data and high-res images.</p>
+          <!-- <video controls class="w-100 rounded mb-3">
+            <source src="assets/img/flighttest/autonomous-sensor-capture.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video> -->
+          <iframe 
+            class="w-100 rounded mb-3"
+            height="630"
+            src="https://www.youtube.com/embed/41PHwCzPyUE"
+            title="Autonomous Sensor & Imaging"
+            frameborder="0"
+            allowfullscreen>
+          </iframe>
+
+          <ul>
+            <li><i class="bi bi-check"></i> <span>Real-time sensor data via BLE</span></li>
+            <li><i class="bi bi-check"></i> <span>Pi Camera image capture mapped with GPS</span></li>
+            <li><i class="bi bi-check"></i> <span>Data sync with cloud dashboard</span></li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    </section><!-- /Pricing Section -->
+    <!-- Gallery Section -->
+    <section id="gallery" class="gallery section">
+
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Gallery</h2>
+        <div><span>Check Our</span> <span class="description-title">Gallery</span></div>
+      </div><!-- End Section Title -->
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+        <div class="row g-0">
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/1.jpeg" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/1.jpeg" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/2.jpeg" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/2.jpeg" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/3.jpeg" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/3.jpeg" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/4.jpeg" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/4.jpeg" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/5.jpeg" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/5.jpeg" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/6.jpeg" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/6.jpeg" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/7.jpeg" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/7.jpeg" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/8.png" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/8.png" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/9.png" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/9.png" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/10.png" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/10.png" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/11.png" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/11.png" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+
+          <div class="col-lg-3 col-md-4">
+            <div class="gallery-item">
+              <a href="assets/img/gallery/12.png" class="glightbox" data-gallery="images-gallery" loading="lazy">
+                <img src="assets/img/gallery/12.png" alt="" class="img-fluid" loading="lazy">
+              </a>
+            </div>
+          </div><!-- End Gallery Item -->
+      </div>
+
+    </section><!-- /Gallery Section -->
+
+    <!-- Team Section -->
+    <section id="team" class="team section">
+
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+  <h2>Team</h2>
+  <div><span>Check Our</span> <span class="description-title">Team</span></div>
+</div><!-- End Section Title -->
+
+<div class="container">
+  <div class="row gy-5">
+
+    <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="100">
+      <div class="member">
+        <div class="pic"><img src="assets/img/team/1.png" class="img-fluid" alt="" loading="lazy"></div>
+        <div class="member-info">
+          <h4>Chethiya Bandara</h4>
+          <span>E/20/032</span>
+          <div class="social">
+            <a href="https://www.thecn.com/EB1158/section/showcase/67974f6bd7c35f526d0ec61d"><i><img src="assets/img/brands/cn.svg" loading="lazy"/></i></a>
+            <a href="https://github.com/ChethiyaB"><i class="bi bi-github"></i></a>
+            <a href="https://linkedin.com/in/chethiyab"><i class="bi bi-linkedin"></i></a>
+          </div>
+        </div>
+      </div>
+    </div><!-- End Team Member -->
+
+    <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="200">
+      <div class="member">
+        <div class="pic"><img src="assets/img/team/2.svg" class="img-fluid" alt="" loading="lazy"></div>
+        <div class="member-info">
+          <h4>Mathisha Bandara</h4>
+          <span>E/20/034</span>
+          <div class="social">
+            <a href="https://www.thecn.com/EB1157/section/showcase/"><i><img src="assets/img/brands/cn.svg" loading="lazy"/></i></a>
+            <a href="https://github.com/mathisha034"><i class="bi bi-github"></i></a>
+            <a href="http://www.linkedin.com/in/mathishabandara"><i class="bi bi-linkedin"></i></a>
+          </div>
+        </div>
+      </div>
+    </div><!-- End Team Member -->
+
+    <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="300">
+      <div class="member">
+        <div class="pic"><img src="assets/img/team/4.svg" class="img-fluid" alt="" loading="lazy"></div>
+        <div class="member-info">
+          <h4>Bimsara Janakantha</h4>
+          <span>E/20/157</span>
+          <div class="social">
+            <a href="https://www.thecn.com/BJ448/section/showcase/"><i><img src="assets/img/brands/cn.svg"/></i></a>
+            <a href="https://github.com/Bimsara-Janakantha"><i class="bi bi-github"></i></a>
+            <a href="https://www.linkedin.com/in/Bimsara-Janakantha/"><i class="bi bi-linkedin"></i></a>
+          </div>
+        </div>
+      </div>
+    </div><!-- End Team Member -->
+
+    <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="400">
+      <div class="member">
+        <div class="pic"><img src="assets/img/team/3.svg" class="img-fluid" alt="" loading="lazy"></div>
+        <div class="member-info">
+          <h4>Sarani Jayasooriya</h4>
+          <span>E/20/173</span>
+          <div class="social">
+            <a href="https://www.thecn.com/EJ455/section/showcase/67c05df30ed02221dc04c763"><i><img src="assets/img/brands/cn.svg"/></i></a>
+            <a href="https://github.com/AeroSaraVJ23"><i class="bi bi-github"></i></a>
+            <a href="https://www.linkedin.com/in/sarani-vinodya-23072001"><i class="bi bi-linkedin"></i></a>
+          </div>
+        </div>
+      </div>
+    </div><!-- End Team Member -->
+
+  </div>
+</div>
+    </section>
+
+    <!-- Faq Section -->
+   <section id="faq" class="faq section light-background">
+
+  <div class="container-fluid">
+
+    <div class="row gy-4">
+
+      <div class="col-lg-7 d-flex flex-column justify-content-center order-2 order-lg-1">
+
+        <div class="content px-xl-5" data-aos="fade-up" data-aos-delay="100">
+          <h3><span>Detailed </span><strong>Budget</strong></h3>
+          <p>
+            Here’s the complete hardware cost breakdown for the drone-based system implementation.
+          </p>
+        </div>
+
+        <div class="faq-container px-xl-5" data-aos="fade-up" data-aos-delay="200">
+
+          <!-- Budget Table FAQ Item -->
+          <div class="faq-item">
+            <i class="faq-icon bi bi-cash-stack"></i>
+            <h3>What is the detailed hardware budget breakdown?</h3>
+            <div class="faq-content">
+              <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Item</th>
+                      <th>Qty</th>
+                      <th>Unit Cost (LKR)</th>
+                      <th>Total (LKR)</th>
+                    </tr>
+                  </thead>
+                    <tbody>
+                      <tr><td>RS485 Soil Sensor</td><td>1</td><td>10,905.12</td><td>10,905.12</td></tr>
+                      <tr><td>LoRa Module</td><td>2</td><td>1,720.00</td><td>3,440.00</td></tr>
+                      <tr><td>RS485 to TTL Converter</td><td>2</td><td>190.00</td><td>380.00</td></tr>
+                      <tr><td>Micro USB Data Cable</td><td>1</td><td>330.00</td><td>330.00</td></tr>
+                      <tr><td>Antenna</td><td>2</td><td>280.00</td><td>560.00</td></tr>
+                      <tr><td>IPEX to SAM Socket</td><td>1</td><td>540.00</td><td>540.00</td></tr>
+                      <tr><td>Raspberry Pi Zero</td><td>1</td><td>9,290.00</td><td>9,290.00</td></tr>
+                      <tr><td>Micro USB Power Supply</td><td>1</td><td>1,390.00</td><td>1,390.00</td></tr>
+                      <tr><td>64 GB SD Card</td><td>1</td><td>1,600.00</td><td>1,600.00</td></tr>
+                      <tr><td>JST Connectors</td><td>1</td><td>210.00</td><td>210.00</td></tr>
+                      <tr><td>Solder Wire</td><td>1</td><td>270.00</td><td>270.00</td></tr>
+                      <tr><td>Male 40-pin Headers</td><td>1</td><td>15.00</td><td>15.00</td></tr>
+                      <tr><td>Battery Case (1S)</td><td>1</td><td>40.00</td><td>40.00</td></tr>
+                      <tr><td>18650 Charge Controller</td><td>1</td><td>50.00</td><td>50.00</td></tr>
+                      <tr><td>MT3608 Boost Converter</td><td>1</td><td>170.00</td><td>170.00</td></tr>
+                      <tr><td>Self-Locking Switch</td><td>1</td><td>30.00</td><td>30.00</td></tr>
+                      <tr><td>10CH Receiver</td><td>1</td><td>6,290.00</td><td>6,290.00</td></tr>
+                      <tr><td>Micro HDMI Cable</td><td>1</td><td>290.00</td><td>290.00</td></tr>
+                      <tr><td>Solar Panel</td><td>2</td><td>440.00</td><td>880.00</td></tr>
+                      <tr><td>TP4056 Charge Controller</td><td>2</td><td>150.00</td><td>300.00</td></tr>
+                      <tr><td>3D Printing</td><td>1</td><td>6,200.00</td><td>6,200.00</td></tr>
+                      <tr><td>PCB Printing</td><td>1</td><td>9,140.00</td><td>9,140.00</td></tr>
+                      <tr><td>RPi Camera Module v3</td><td>1</td><td>15,980.00</td><td>15,980.00</td></tr>
+                      <tr><td>Miscellaneous</td><td>N/A</td><td>N/A</td><td>5,018.09</td></tr>
+                      <tr class="table-success fw-bold"><td colspan="3" class="text-end">SUB TOTAL</td><td>74,068.21</td></tr>
+                    </tbody>
+                </table>
+              </div>
+            </div>
+            <i class="faq-toggle bi bi-chevron-right"></i>
+          </div><!-- End Budget Faq Item -->
+
+        </div>
+
+      </div>
+
+      <div class="col-lg-5 order-1 order-lg-2">
+        <img src="assets/img/cost.svg" class="img-fluid" alt="" data-aos="zoom-in" data-aos-delay="100" loading="lazy">
+      </div>
+    </div>
+
+  </div>
+
+</section>
+<!-- /Faq Section -->
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact section parallax-section">
+
+    <div class="parallax-container">
+      <img src="assets/img/drone.png" alt="Drone over tea plantation" class="parallax-image" loading="lazy">
+    </div>
+
+    <div class="container section-title text-white text-left" data-aos="fade-up">
+      <h2 class="conth">Contact</h2>
+      <div><span>Check Our</span> <span class="description-title">Contact</span></div>
+    </div>
+
+    <div class="container" data-aos="fade" data-aos-delay="100">
+
+      <div class="row gy-4 justify-content-center">
+
+        <div class="col-lg-6">
+          <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="200">
+            <i class="bi bi-geo-alt flex-shrink-0"></i>
+            <div>
+              <h3>Address</h3>
+              <p class="pwhite">Department of Computer Engineering, <br>
+                Faculty of Engineering, <br>
+                University of Peradeniya. <br>
+                20400
+              </p>
+            </div>
+          </div>
+
+          <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="300">
+            <i class="bi bi-telephone flex-shrink-0"></i>
+            <div>
+              <h3>Call Us</h3>
+              <p class="pwhite">+94753729532 / +94702552553</p>
+            </div>
+          </div>
+
+          <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="400">
+            <i class="bi bi-envelope flex-shrink-0"></i>
+            <div>
+              <h3>Email Us</h3>
+              <p class="pwhite">e20(032/034/157/173)@eng.pdn.ac.lk</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+</section>
+<!-- /Contact Section -->
+
+  </main>
+
+  <footer id="footer" class="footer dark-background">
+
+    <div class="container copyright text-center mt-4">
+      <p>© <span>Copyright</span> <strong class="px-1 sitename">SkyT</strong> <span>All Rights Reserved</span></p>
+      <div class="credits">
+        Designed by <a href="#">Team SkyT</a>
+      </div>
+    </div>
+
+  </footer>
+
+  <!-- Scroll Top -->
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <!-- Preloader -->
+  <div id="preloader">
+    <img src="assets/img/Logofull.png" alt="Logo" id="preloader-logo">
+  </div>
+
+  <!-- Vendor JS Files -->
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/aos/aos.js"></script>
+  <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
+  <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
+  <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var heroImg = document.querySelector('.hero-img img');
+      var heroVideo = document.querySelector('.hero-bg');
+      var readyCount = 0;
+
+      function hidePreloader() {
+        document.getElementById('preloader').style.display = 'none';
+      }
+
+      function checkReady() {
+        readyCount++;
+      }
+
+      // Wait for hero image
+      if (heroImg && !heroImg.complete) {
+        heroImg.addEventListener('load', checkReady);
+      } else {
+        checkReady();
+      }
+
+      // Wait for hero video
+      if (heroVideo && heroVideo.readyState < 2) {
+        heroVideo.addEventListener('loadeddata', checkReady);
+      } else {
+        checkReady();
+      }
+    });
+  </script>
+  <script>
+    window.addEventListener('scroll', function () {
+      const img = document.querySelector('.parallax-image');
+      let scroll = window.scrollY;
+      img.style.transform = `translateY(${scroll * 0.3}px)`;
+    });
+  </script>
+
+    <script>
+      function toggleFeature(element) {
+        const desc = element.querySelector('.feature-desc');
+        desc.style.display = desc.style.display === 'none' ? 'block' : 'none';
+      }
+    </script>
+  <script src="https://kit.fontawesome.com/b1a4e02518.js" crossorigin="anonymous"></script>
+  <!-- Main JS File -->
+  <script src="assets/js/main.js"></script>
+
+</body>
+
 </html>
