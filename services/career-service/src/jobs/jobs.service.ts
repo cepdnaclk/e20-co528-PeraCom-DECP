@@ -10,7 +10,7 @@ import {
   EmploymentType,
   Job,
   JobStatus,
-  WORK_MODE,
+  WorkMode,
   type JobDocument,
 } from "./schemas/job.schema.js";
 import { CreateJobDto } from "./dto/create-job.dto.js";
@@ -36,6 +36,8 @@ export class JobsService {
   // Create a Job (Defaults to DRAFT status)
   // =================================================
   async createJob(actorId: string, correlationId: string, dto: CreateJobDto) {
+    console.log("Creating job with data:", { actorId, correlationId, dto });
+
     // 1. Database Execution
     const createdJob = new this.jobModel({
       ...dto,
@@ -323,7 +325,7 @@ export class JobsService {
     limit?: number,
     search?: string,
     employmentType?: EmploymentType,
-    workMode?: WORK_MODE,
+    workMode?: WorkMode,
     status?: JobStatus,
   ) {
     // 1. Enforce safe limits (prevent users from requesting 10,000 jobs at once)

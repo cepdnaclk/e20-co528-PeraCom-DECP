@@ -16,7 +16,7 @@ export enum JobStatus {
   CLOSED = "CLOSED",
 }
 
-export enum WORK_MODE {
+export enum WorkMode {
   ON_SITE = "ON_SITE",
   REMOTE = "REMOTE",
   HYBRID = "HYBRID",
@@ -45,8 +45,8 @@ export class Job {
   @Prop({ type: [String], default: [], index: true })
   tags!: string[]; // e.g., ["React", "Node.js", "Remote"]
 
-  @Prop({ type: String, enum: WORK_MODE, required: true })
-  workMode!: WORK_MODE;
+  @Prop({ type: String, enum: WorkMode, required: true })
+  workMode!: WorkMode;
 
   @Prop({ required: false })
   salaryRange?: string; // e.g., "$100k - $120k"
