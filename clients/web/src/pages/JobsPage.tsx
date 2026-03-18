@@ -1,6 +1,12 @@
 import { useEffect, useState, type UIEvent } from "react";
 import { cn } from "@/lib/utils";
-import { MapPin, Clock, Search, Building } from "lucide-react";
+import {
+  MapPin,
+  Clock,
+  Search,
+  Building,
+  BriefcaseBusiness,
+} from "lucide-react";
 import { JobFeedItem } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,6 +14,7 @@ import api from "@/services/api";
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import EmptyState from "@/components/EmptyState";
 
 type EmploymentType = JobFeedItem["employmentType"] | "ALL";
 type WorkModeType = JobFeedItem["workMode"] | "ALL";
@@ -205,15 +212,11 @@ const JobsPage = () => {
           ))}
         </div>
       ) : jobs.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-10">
-          <h2 className="text-lg font-semibold text-foreground">
-            No jobs found
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Try adjusting your search or filters to find what you're looking
-            for.
-          </p>
-        </div>
+        <EmptyState
+          icon={<BriefcaseBusiness className="h-12 w-12" />}
+          title="No jobs found"
+          description="Try adjusting your search or filters to find what you're looking for."
+        />
       ) : (
         <div
           onScroll={handleScroll}
