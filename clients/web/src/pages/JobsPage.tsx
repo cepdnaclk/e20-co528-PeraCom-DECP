@@ -1,20 +1,13 @@
 import { useEffect, useState, type UIEvent } from "react";
-import { cn } from "@/lib/utils";
-import {
-  MapPin,
-  Clock,
-  Search,
-  Building,
-  BriefcaseBusiness,
-} from "lucide-react";
+import { Search, BriefcaseBusiness } from "lucide-react";
 import { EmploymentType, JobFeedItem, WorkMode } from "@/types";
-import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/services/api";
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import EmptyState from "@/components/EmptyState";
+import JobCard from "@/components/JobCard";
 
 type EmpType = EmploymentType | "ALL";
 type WorkModeType = WorkMode | "ALL";
@@ -33,14 +26,6 @@ const workModeOptions: { value: WorkModeType; label: string }[] = [
   { value: "REMOTE", label: "Remote" },
   { value: "HYBRID", label: "Hybrid" },
 ];
-
-const typeColors: Record<string, string> = {
-  FULL_TIME: "bg-success/15 text-success",
-  INTERNSHIP: "bg-info/15 text-info",
-  PART_TIME: "bg-warning/15 text-warning",
-  CONTRACT:
-    "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-};
 
 const FEED_LIMIT = import.meta.env.VITE_FEED_LIMIT;
 
@@ -223,81 +208,27 @@ const JobsPage = () => {
           className="space-y-3 h-[calc(100vh-300px)] overflow-y-auto pr-1"
         >
           {jobs.map((job) => (
-            <div
+            <JobCard
               key={job._id}
-              className="group rounded-xl border bg-card p-5 transition-shadow hover:shadow-md"
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex-1">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <h3 className="text-base font-semibold text-card-foreground group-hover:text-primary transition-colors">
-                      {job.title}
-                    </h3>
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-xs font-medium capitalize",
-                        typeColors[job.employmentType],
-                      )}
-                    >
-                      {
-                        employmentTypeOptions.find(
-                          (et) => et.value === job.employmentType,
-                        )?.label
-                      }
-                    </span>
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-xs font-medium capitalize bg-accent text-accent-foreground border border-accent",
-                        job.workMode === "REMOTE"
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                          : job.workMode === "HYBRID"
-                            ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                            : job.workMode === "ON_SITE"
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "",
-                      )}
-                    >
-                      {
-                        workModeOptions.find((wm) => wm.value === job.workMode)
-                          ?.label
-                      }
-                    </span>
-                  </div>
-                  <p className="mb-2 text-sm text-muted-foreground">
-                    {job.description}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Building className="h-3.5 w-3.5" /> {job.companyName}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" /> {job.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />{" "}
-                      {formatDistanceToNow(new Date(job.updatedAt), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                    <span>{job.applicationCount} applicants</span>
-                  </div>
-                </div>
-                <div className="flex gap-2 sm:flex-col">
+              job={job}
+              actions={
+                <>
                   <button
                     onClick={() => navigate(`apply/${job._id}`)}
                     className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:flex-none"
                   >
                     Apply
                   </button>
+
                   <button
                     onClick={() => navigate(`view/${job._id}`)}
                     className="flex-1 rounded-lg border p-2 text-muted-foreground hover:bg-secondary flex items-center justify-center"
                   >
                     View
                   </button>
-                </div>
-              </div>
-            </div>
+                </>
+              }
+            />
           ))}
           {isLoading && (
             <div className="flex justify-center py-2 text-xs text-muted-foreground">
