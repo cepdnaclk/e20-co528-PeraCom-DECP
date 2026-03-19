@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/lib/utils";
+import { cn, deduplicateById, getErrorMessage } from "@/lib/utils";
 import api from "@/services/api";
 import { EmploymentType, JobFeedItem, JobStatus, WorkMode } from "@/types";
 import { toast } from "@/components/ui/sonner";
@@ -37,11 +37,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import JobCard from "@/components/JobCard";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-
-interface ApiError {
-  response?: { data?: { message?: string } };
-  message?: string;
-}
 
 type RoleView = "ALUMNI" | "ADMIN";
 type JobStatusFilter = JobStatus | "ALL";
@@ -74,22 +69,7 @@ const DEFAULT_FORM: CreateJobForm = {
   deadline: "",
 };
 
-const getErrorMessage = (error: unknown, fallback: string) => {
-  const e = error as ApiError;
-  return e?.response?.data?.message || e?.message || fallback;
-};
-
 const FEED_LIMIT = Number(import.meta.env.VITE_FEED_LIMIT) || 10;
-
-/** Deduplicate an array of jobs by _id, keeping the first occurrence. */
-const deduplicateById = (items: JobFeedItem[]): JobFeedItem[] => {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    if (seen.has(item._id)) return false;
-    seen.add(item._id);
-    return true;
-  });
-};
 
 const JobsManagementPage = () => {
   const { user } = useAuth();
@@ -159,8 +139,8 @@ const JobsManagementPage = () => {
         // Remove duplicates and update the job list
         setJobs((prev) =>
           reset
-            ? deduplicateById(data ?? [])
-            : deduplicateById([...prev, ...data]),
+            ? deduplicateById<JobFeedItem>(data ?? [])
+            : deduplicateById<JobFeedItem>([...prev, ...data]),
         );
         setNextCursor(fetchedNextCursor ?? null);
       } catch (error) {

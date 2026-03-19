@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import EmptyState from "@/components/EmptyState";
 import JobCard from "@/components/JobCard";
 import { Button } from "@/components/ui/button";
+import { deduplicateById, getErrorMessage } from "@/lib/utils";
 
 type EmpType = EmploymentType | "ALL";
 type WorkModeType = WorkMode | "ALL";
@@ -29,25 +30,6 @@ const workModeOptions: { value: WorkModeType; label: string }[] = [
 ];
 
 const FEED_LIMIT = import.meta.env.VITE_FEED_LIMIT;
-
-interface ApiError {
-  response?: { data?: { message?: string } };
-  message?: string;
-}
-
-const deduplicateById = (items: JobFeedItem[]): JobFeedItem[] => {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    if (seen.has(item._id)) return false;
-    seen.add(item._id);
-    return true;
-  });
-};
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  const e = error as ApiError;
-  return e?.response?.data?.message || e?.message || fallback;
-};
 
 const JobsPage = () => {
   const navigate = useNavigate();
@@ -92,8 +74,8 @@ const JobsPage = () => {
         // Remove duplicates and update the job list
         setJobs((prev) =>
           reset
-            ? deduplicateById(data ?? [])
-            : deduplicateById([...prev, ...data]),
+            ? deduplicateById<JobFeedItem>(data ?? [])
+            : deduplicateById<JobFeedItem>([...prev, ...data]),
         );
         setNextCursor(fetchedNextCursor ?? null);
       } catch (error) {

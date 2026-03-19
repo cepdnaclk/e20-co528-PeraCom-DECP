@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
@@ -42,7 +42,7 @@ import {
   Flag,
   Loader2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, deduplicateById, getErrorMessage } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/components/ui/sonner";
 import api from "@/services/api";
@@ -74,7 +74,7 @@ const MAX_ALLOWED_CHARACTERS = import.meta.env.VITE_MAX_ALLOWED_CHARACTERS;
 const MAX_VISIBLE_CHARACTERS = 200;
 const FEED_PAGE_LIMIT = import.meta.env.VITE_FEED_LIMIT;
 const COMMENTS_PREVIEW_LIMIT = 3;
-const APPEND = false;
+const APPEND = true;
 
 type AuthorSummaryRaw = {
   id: string;
@@ -226,7 +226,7 @@ const PostCard = ({
   onFeedRefresh,
 }: {
   post: Post;
-  onFeedRefresh?: () => Promise<void> | void;
+  onFeedRefresh?: (options?: { reset?: boolean }) => Promise<void> | void;
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -307,10 +307,9 @@ const PostCard = ({
 
       setMyReaction(newReaction);
     } catch (error) {
-      const errMsg =
-        error.response?.data?.message ||
-        "Failed to react to post. Please try again.";
-      toast.error(errMsg);
+      toast.error(
+        getErrorMessage(error, "Failed to react to post. Please try again."),
+      );
     } finally {
       setIsReacting(false);
     }
@@ -398,10 +397,9 @@ const PostCard = ({
       setCommentsCursor(nextCursor);
       setHasMoreComments(Boolean(nextCursor));
     } catch (error) {
-      const errMsg =
-        error.response?.data?.message ||
-        "Failed to fetch comments. Please try again.";
-      toast.error(errMsg);
+      toast.error(
+        getErrorMessage(error, "Failed to fetch comments. Please try again."),
+      );
     } finally {
       setIsLoadingComments(false);
       setIsLoadingMoreComments(false);
@@ -469,10 +467,9 @@ const PostCard = ({
       setShowComments(true);
       toast.success("Comment added");
     } catch (error) {
-      const errMsg =
-        error.response?.data?.message ||
-        "Failed to add comment. Please try again.";
-      toast.error(errMsg);
+      toast.error(
+        getErrorMessage(error, "Failed to add comment. Please try again."),
+      );
     } finally {
       setIsSubmittingComment(false);
     }
@@ -496,11 +493,11 @@ const PostCard = ({
       console.log("Repost response:", response.data);
 
       toast.success("Post reposted");
-      await onFeedRefresh?.();
+      await onFeedRefresh({ reset: true });
     } catch (error) {
-      const errMsg =
-        error.response?.data?.message || "Failed to repost. Please try again.";
-      toast.error(errMsg);
+      toast.error(
+        getErrorMessage(error, "Failed to repost. Please try again."),
+      );
     } finally {
       setIsReposting(false);
     }
@@ -526,10 +523,9 @@ const PostCard = ({
       toast.success("Post deleted");
       await onFeedRefresh?.();
     } catch (error) {
-      const errMsg =
-        error.response?.data?.message ||
-        "Failed to delete post. Please try again.";
-      toast.error(errMsg);
+      toast.error(
+        getErrorMessage(error, "Failed to delete post. Please try again."),
+      );
     } finally {
       setIsActionConfirmOpen(false);
     }
@@ -629,12 +625,11 @@ const PostCard = ({
 
       toast.success("Post updated successfully!");
       setIsEditPostDialogOpen(false);
-      await onFeedRefresh?.();
+      await onFeedRefresh?.({ reset: true });
     } catch (error) {
-      const errMsg =
-        error.response?.data?.message ||
-        "Failed to update post. Please try again.";
-      toast.error(errMsg);
+      toast.error(
+        getErrorMessage(error, "Failed to update post. Please try again."),
+      );
     } finally {
       setIsUpdatingPost(false);
     }
@@ -1100,9 +1095,9 @@ const SocialFeedPage = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  // Post Creation States
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
   const handlePublish = async ({
     content,
     newFiles,
@@ -1137,106 +1132,142 @@ const SocialFeedPage = () => {
         },
       });
       setIsDialogOpen(false);
-      getPosts();
+      fetchPosts({ reset: true });
       toast.success("Post published successfully!");
     } catch (error) {
-      const errMsg = error.response?.data?.message || "Failed to publish post";
-      toast.error(errMsg);
+      toast.error(getErrorMessage(error, "Failed to publish post"));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getPosts = async () => {
-    setIsLoading(true);
+  const fetchPosts = useCallback(
+    async (options?: { reset?: boolean }) => {
+      const reset = options?.reset ?? false;
+      if (isLoading) return;
 
-    try {
-      const params = { cursor, limit: FEED_PAGE_LIMIT };
-      console.log("Fetching posts with params:", params);
+      const cursorToUse = reset ? null : cursor;
+      if (!reset && !cursorToUse) return;
 
-      const postResponse = await api.get("/engagement/posts", { params });
+      setIsLoading(true);
 
-      const postsData = postResponse.data.data || [];
-      console.log("Fetched posts:", postResponse.data);
-      setCursor(postResponse.data.nextCursor ?? null);
+      try {
+        // Create Parameters
+        const params = { cursor, limit: FEED_PAGE_LIMIT };
+        console.log("Fetching posts with params:", params);
 
-      let finalPosts = [];
+        const postResponse = await api.get("/engagement/posts", { params });
 
-      if (postsData.length > 0) {
-        // 1. Extract IDs from top-level posts AND nested original posts
-        const authorIds = new Set<string>();
+        const postsData = postResponse.data.data || [];
+        console.log("Fetched posts:", postResponse.data);
+        setCursor(postResponse.data.nextCursor ?? null);
 
-        postsData.forEach((p) => {
-          if (p.authorId) authorIds.add(p.authorId);
+        let finalPosts = [];
 
-          // ✨ Check if there's a populated original post and get its authorId
-          if (p.originalPostId && typeof p.originalPostId === "object") {
-            authorIds.add(p.originalPostId.authorId);
-          }
-        });
+        if (postsData.length > 0) {
+          // 1. Extract IDs from top-level posts AND nested original posts
+          const authorIds = new Set<string>();
 
-        // 2. Fetch all unique author summaries in one batch
-        const authorResponse = await api.get("/identity/users/summary", {
-          params: { users: Array.from(authorIds) },
-          paramsSerializer: { indexes: null },
-        });
+          postsData.forEach((p) => {
+            if (p.authorId) authorIds.add(p.authorId);
 
-        const authorsList = authorResponse.data || [];
+            // ✨ Check if there's a populated original post and get its authorId
+            if (p.originalPostId && typeof p.originalPostId === "object") {
+              authorIds.add(p.originalPostId.authorId);
+            }
+          });
 
-        // Helper to format the author object for the UI
-        const mapAuthor = (id: string) => {
-          const info = authorsList.find((a) => a.id === id);
-          return {
-            userId: info?.id,
-            name: `${info.first_name} ${info.last_name}`.trim(),
-            avatar: info?.profile_pic || null,
-          };
-        };
+          // 2. Fetch all unique author summaries in one batch
+          const authorResponse = await api.get("/identity/users/summary", {
+            params: { users: Array.from(authorIds) },
+            paramsSerializer: { indexes: null },
+          });
 
-        // 3. Merge author info into both layers of the post
-        finalPosts = postsData.map((post) => {
-          const mergedPost = {
-            ...post,
-            author: mapAuthor(post.authorId),
-          };
+          const authorsList = authorResponse.data || [];
 
-          // ✨ If it's a repost, merge author info into the original post too
-          if (post.originalPostId && typeof post.originalPostId === "object") {
-            mergedPost.originalPostId = {
-              ...post.originalPostId,
-              author: mapAuthor(post.originalPostId.authorId),
+          // Helper to format the author object for the UI
+          const mapAuthor = (id: string) => {
+            const info = authorsList.find((a) => a.id === id);
+            return {
+              userId: info?.id,
+              name: `${info.first_name} ${info.last_name}`.trim(),
+              avatar: info?.profile_pic || null,
             };
-          }
+          };
 
-          return mergedPost;
-        });
+          // 3. Merge author info into both layers of the post
+          finalPosts = postsData.map((post) => {
+            const mergedPost = {
+              ...post,
+              author: mapAuthor(post.authorId),
+            };
+
+            // ✨ If it's a repost, merge author info into the original post too
+            if (
+              post.originalPostId &&
+              typeof post.originalPostId === "object"
+            ) {
+              mergedPost.originalPostId = {
+                ...post.originalPostId,
+                author: mapAuthor(post.originalPostId.authorId),
+              };
+            }
+
+            return mergedPost;
+          });
+        }
+
+        // 5. Update state
+        setPosts((prevPosts) =>
+          APPEND
+            ? deduplicateById<Post>([...prevPosts, ...finalPosts]).sort(
+                (a, b) =>
+                  new Date(b.updatedAt).getTime() -
+                  new Date(a.updatedAt).getTime(),
+              )
+            : finalPosts,
+        );
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Failed to load posts"));
+        console.error("Fetch Error:", error);
+      } finally {
+        setIsLoading(false);
       }
+    },
+    [isLoading, cursor],
+  );
 
-      // 5. Update state
-      setPosts((prevPosts) =>
-        APPEND
-          ? [...prevPosts, ...finalPosts].sort(
-              (a, b) =>
-                new Date(b.updatedAt).getTime() -
-                new Date(a.updatedAt).getTime(),
-            )
-          : finalPosts,
-      );
-    } catch (error) {
-      const errMsg =
-        error.response?.data?.message ||
-        "Failed to load posts. Please try again.";
-      toast.error(errMsg);
-      console.error("Fetch Error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Initial load
   useEffect(() => {
-    getPosts();
+    fetchPosts({ reset: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto load next page when the sentinel enters the viewport
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || isLoading || !cursor) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry?.isIntersecting) {
+          fetchPosts();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "240px 0px",
+        threshold: 0.1,
+      },
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [fetchPosts, isLoading, cursor]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -1326,8 +1357,18 @@ const SocialFeedPage = () => {
       ) : (
         <div className="space-y-4">
           {posts.map((post) => (
-            <PostCard key={post._id} post={post} onFeedRefresh={getPosts} />
+            <PostCard key={post._id} post={post} onFeedRefresh={fetchPosts} />
           ))}
+
+          {isLoading && posts.length > 0 && (
+            <div className="flex justify-center mt-4">
+              <span className="text-sm text-muted-foreground">
+                Loading more posts...
+              </span>
+            </div>
+          )}
+
+          {cursor && <div ref={loadMoreRef} className="h-1 w-full" />}
         </div>
       )}
     </div>
