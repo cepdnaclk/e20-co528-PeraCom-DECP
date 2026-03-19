@@ -87,7 +87,7 @@ const LoginPage = () => {
           </p>
 
           {/* Google Login */}
-          <div className="mb-6">
+          <div className="mb-6 flex justify-center">
             <GoogleLogin
               onSuccess={(credentialResponse) => userVerify(credentialResponse)}
               onError={() => console.log("Login Failed")}

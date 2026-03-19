@@ -8,6 +8,16 @@ export type ReactionType =
   | "HAHA"
   | "INSIGHTFUL";
 
+export type WorkMode = "ON_SITE" | "REMOTE" | "HYBRID";
+
+export type EmploymentType =
+  | "FULL_TIME"
+  | "PART_TIME"
+  | "INTERNSHIP"
+  | "CONTRACT";
+
+export type JobStatus = "DRAFT" | "PUBLISHED" | "CLOSED";
+
 export interface UserSummary {
   userId: string;
   email: string;
@@ -40,6 +50,28 @@ export interface Comment {
   content: string;
   isEdited: boolean;
   updatedAt: string;
+}
+
+export interface JobFeedItem {
+  _id: string;
+  title: string;
+  companyName: string;
+  description: string;
+  location: string;
+  employmentType: EmploymentType;
+  workMode: WorkMode;
+  status: JobStatus;
+  applicationCount: number;
+  updatedAt: string;
+}
+
+export interface Job extends JobFeedItem {
+  department: string;
+  tags: string[];
+  salaryRange?: string;
+  postedBy: User;
+  deadline: string;
+  createdAt: string;
 }
 
 export interface User {
@@ -99,21 +131,6 @@ export interface Event {
   attendees: number;
   maxAttendees: number;
   organizer: User;
-}
-
-export interface Job {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  type: "full-time" | "part-time" | "internship" | "contract";
-  remote: boolean;
-  description: string;
-  postedBy: User;
-  postedAt: string;
-  industry: string;
-  status: "active" | "closed" | "draft";
-  applicants: number;
 }
 
 export interface Notification {

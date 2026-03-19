@@ -10,6 +10,7 @@ import {
   EmploymentType,
   Job,
   JobStatus,
+  WorkMode,
   type JobDocument,
 } from "./schemas/job.schema.js";
 import { CreateJobDto } from "./dto/create-job.dto.js";
@@ -35,6 +36,8 @@ export class JobsService {
   // Create a Job (Defaults to DRAFT status)
   // =================================================
   async createJob(actorId: string, correlationId: string, dto: CreateJobDto) {
+    console.log("Creating job with data:", { actorId, correlationId, dto });
+
     // 1. Database Execution
     const createdJob = new this.jobModel({
       ...dto,
@@ -131,13 +134,13 @@ export class JobsService {
     const updatedJob = await this.jobModel.findOneAndUpdate(
       {
         _id: jobId,
-        author: actorId,
+        postedBy: actorId,
         status: JobStatus.DRAFT, // The crucial concurrency filter
       },
       {
         $set: { status: JobStatus.PUBLISHED },
       },
-      { new: true }, // Return the updated document
+      { returnDocument: "after" },
     );
 
     // 6. ✨ THE CONCURRENCY CATCH ✨
@@ -178,7 +181,7 @@ export class JobsService {
     });
 
     // 9. Return the updated job
-    return updatedJob;
+    return { message: "Job published successfully" };
   }
 
   // =================================================
@@ -196,11 +199,11 @@ export class JobsService {
     const closedJob = await this.jobModel.findOneAndUpdate(
       {
         _id: jobId,
-        author: actorId,
+        postedBy: actorId,
         status: { $ne: JobStatus.CLOSED },
       },
       { $set: { status: JobStatus.CLOSED } },
-      { new: true },
+      { returnDocument: "after" }, // Return the updated document for event emission
     );
 
     // 3. ✨ THE CONCURRENCY CATCH ✨
@@ -241,10 +244,7 @@ export class JobsService {
     });
 
     // 6. Return the closed job
-    return {
-      message: "Job closed successfully",
-      job_id: closedJob._id.toString(),
-    };
+    return { message: "Job closed successfully" };
   }
 
   // =================================================
@@ -322,6 +322,7 @@ export class JobsService {
     limit?: number,
     search?: string,
     employmentType?: EmploymentType,
+    workMode?: WorkMode,
     status?: JobStatus,
   ) {
     // 1. Enforce safe limits (prevent users from requesting 10,000 jobs at once)
@@ -346,7 +347,12 @@ export class JobsService {
       filter.employmentType = employmentType;
     }
 
-    // 5. Apply the Cursor (The Concurrency Shield)
+    // 5. Apply Work Mode Filter (e.g., "Only show me Remote jobs")
+    if (workMode) {
+      filter.workMode = workMode;
+    }
+
+    // 6. Apply the Cursor (The Concurrency Shield)
     if (cursor) {
       if (!Types.ObjectId.isValid(cursor)) {
         throw new BadRequestException("Invalid cursor format");
@@ -355,41 +361,47 @@ export class JobsService {
       filter._id = { $lt: new Types.ObjectId(cursor) };
     }
 
-    // 6. Execute the Query using the Limit + 1 Trick
+    // 7. Check the deadline filter to exclude expired jobs (only for non-admins)
+    if (status === JobStatus.PUBLISHED) {
+      filter.deadline = { $gt: new Date() };
+    }
+
+    // 8. Define the fields to select
+    const select = {
+      _id: 1,
+      title: 1,
+      companyName: 1,
+      description: 1,
+      location: 1,
+      employmentType: 1,
+      workMode: 1,
+      status: 1,
+      applicationCount: 1,
+      updatedAt: 1,
+    };
+
+    // 9. Execute the Query using the Limit + 1 Trick
     const jobs = await this.jobModel
       .find(filter)
       .sort({ _id: -1 }) // Chronological order: Newest first
       .limit(safeLimit + 1)
+      .select(select) // Only select necessary fields for the feed
       .lean() // .lean() strips heavy Mongoose metadata for blazing fast read speeds
       .exec();
 
-    // 7. Resolve the Next Cursor
+    // 10. Resolve the Next Cursor
     let nextCursor: string | null = null;
 
-    // If we got back more items than the requested limit, we know there is a next page!
+    // 11. If we got back more items than the requested limit, we know there is a next page!
     if (jobs.length > safeLimit) {
       const extraJob = jobs.pop(); // Remove the +1 lookahead item
       nextCursor = jobs[jobs.length - 1]?._id.toString() || ""; // The ID of the last real item
     }
 
-    // 8. -Strip out internal fields before sending to client
-    // For example, we don't need to send the internal 'postedBy' actorId if we are just showing the feed
-    const sanitizedJobs = jobs.map((job) => ({
-      id: job._id,
-      title: job.title,
-      companyName: job.companyName,
-      location: job.location,
-      employmentType: job.employmentType,
-      tags: job.tags,
-      salaryRange: job.salaryRange,
-      createdAt: job.createdAt,
-      deadline: job.deadline,
-    }));
-
-    // 9. Prometheus Metric
+    // 12. Prometheus Metric
     this.jobCounter.inc();
 
-    // 10. Kafka Event Emission
+    // 13. Kafka Event Emission
     const jobViewedEvent: BaseEvent<any> = {
       eventId: uuidv7(),
       eventType: "career.job.viewed",
@@ -403,6 +415,7 @@ export class JobsService {
         limit: safeLimit,
         search: search ?? null,
         employmentType: employmentType ?? null,
+        workMode: workMode ?? null,
       },
     };
 
@@ -415,7 +428,7 @@ export class JobsService {
 
     // 9. Return the Feed with Metadata
     return {
-      data: sanitizedJobs,
+      data: jobs,
       nextCursor,
     };
   }
@@ -507,35 +520,35 @@ export class JobsService {
       filter._id = { $lt: new Types.ObjectId(cursor) };
     }
 
-    // 6. Query execution with limit + 1 pagination
+    // 6. Define fields to select for the feed (exclude heavy fields like description)
+    const select = {
+      _id: 1,
+      title: 1,
+      companyName: 1,
+      description: 1,
+      location: 1,
+      employmentType: 1,
+      workMode: 1,
+      status: 1,
+      applicationCount: 1,
+      updatedAt: 1,
+    };
+
+    // 7. Query execution with limit + 1 pagination
     const jobs = await this.jobModel
       .find(filter)
       .sort({ _id: -1 })
       .limit(safeLimit + 1)
+      .select(select)
       .lean()
       .exec();
 
-    // 7. Resolve next cursor
+    // 8. Resolve next cursor
     let nextCursor: string | null = null;
     if (jobs.length > safeLimit) {
       jobs.pop();
       nextCursor = jobs[jobs.length - 1]?._id.toString() || "";
     }
-
-    // 8. Response mapping
-    const mappedJobs = jobs.map((job) => ({
-      id: job._id,
-      title: job.title,
-      companyName: job.companyName,
-      location: job.location,
-      employmentType: job.employmentType,
-      status: job.status,
-      tags: job.tags,
-      salaryRange: job.salaryRange,
-      createdAt: job.createdAt,
-      deadline: job.deadline,
-      applicationCount: job.applicationCount,
-    }));
 
     // 9. Metrics + event
     this.jobCounter.inc();
@@ -565,7 +578,7 @@ export class JobsService {
 
     // 10. Return paginated result
     return {
-      data: mappedJobs,
+      data: jobs,
       nextCursor,
     };
   }

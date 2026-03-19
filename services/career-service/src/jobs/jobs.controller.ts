@@ -16,7 +16,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { ActorId } from "../auth/decorators/actor.decorator.js";
 import { CorrelationId } from "../auth/decorators/correlation-id.decorator.js";
 import { CreateJobDto } from "./dto/create-job.dto.js";
-import { EmploymentType, JobStatus } from "./schemas/job.schema.js";
+import { EmploymentType, JobStatus, WorkMode } from "./schemas/job.schema.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
 
@@ -75,7 +75,7 @@ export class JobsController {
     );
   }
 
-  // GET /jobs/admin?cursor=xxx&limit=10&search=engineer&employmentType=FULL_TIME&status=DRAFT
+  // GET /jobs/admin?cursor=xxx&limit=10&search=engineer&status=DRAFT
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN")
   @Get("admin")
@@ -85,7 +85,6 @@ export class JobsController {
     @Query("cursor") cursor?: string,
     @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit?: number,
     @Query("search") search?: string,
-    @Query("employmentType") employmentType?: EmploymentType,
     @Query("status") status?: JobStatus,
   ) {
     return this.jobsService.getJobsFeed(
@@ -94,7 +93,8 @@ export class JobsController {
       cursor,
       limit,
       search,
-      employmentType,
+      undefined,
+      undefined,
       status,
     );
   }
@@ -131,6 +131,7 @@ export class JobsController {
     @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit?: number,
     @Query("search") search?: string,
     @Query("employmentType") employmentType?: EmploymentType,
+    @Query("workMode") workMode?: WorkMode,
   ) {
     return this.jobsService.getJobsFeed(
       actorId,
@@ -139,6 +140,7 @@ export class JobsController {
       limit,
       search,
       employmentType,
+      workMode,
       JobStatus.PUBLISHED,
     );
   }

@@ -16,6 +16,12 @@ export enum JobStatus {
   CLOSED = "CLOSED",
 }
 
+export enum WorkMode {
+  ON_SITE = "ON_SITE",
+  REMOTE = "REMOTE",
+  HYBRID = "HYBRID",
+}
+
 @Schema({ timestamps: true, optimisticConcurrency: true })
 export class Job {
   @Prop({ required: true, index: true })
@@ -38,6 +44,9 @@ export class Job {
 
   @Prop({ type: [String], default: [], index: true })
   tags!: string[]; // e.g., ["React", "Node.js", "Remote"]
+
+  @Prop({ type: String, enum: WorkMode, required: true })
+  workMode!: WorkMode;
 
   @Prop({ required: false })
   salaryRange?: string; // e.g., "$100k - $120k"

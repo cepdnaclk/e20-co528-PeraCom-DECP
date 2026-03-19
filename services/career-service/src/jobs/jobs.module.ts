@@ -15,6 +15,7 @@ import { JobExpirationCron } from "./job-expiration.cron.js";
     makeCounterProvider({
       name: "career_jobs_created_total",
       help: "Total number of jobs created",
+      labelNames: ["status"], // e.g., DRAFT, PUBLISHED, EXPIRED
     }),
   ],
 })

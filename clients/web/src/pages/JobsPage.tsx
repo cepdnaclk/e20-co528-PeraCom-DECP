@@ -1,79 +1,280 @@
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
-import { Briefcase, MapPin, Clock, Bookmark, Search, Building, ExternalLink } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type UIEvent } from "react";
+import { Search, BriefcaseBusiness, Eye } from "lucide-react";
+import { EmploymentType, JobFeedItem, WorkMode } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import api from "@/services/api";
+import { toast } from "@/components/ui/sonner";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import EmptyState from "@/components/EmptyState";
+import JobCard from "@/components/JobCard";
+import { Button } from "@/components/ui/button";
+import { deduplicateById, getErrorMessage } from "@/lib/utils";
 
-const jobs = [
-  { id: '1', title: 'Frontend Engineer', company: 'TechCorp', location: 'San Francisco, CA', type: 'full-time' as const, remote: true, industry: 'Technology', posted: '2 days ago', applicants: 24, description: 'Build beautiful user interfaces with React and TypeScript.' },
-  { id: '2', title: 'Machine Learning Intern', company: 'DataLabs AI', location: 'New York, NY', type: 'internship' as const, remote: false, industry: 'AI/ML', posted: '1 week ago', applicants: 56, description: 'Work on cutting-edge ML models for NLP applications.' },
-  { id: '3', title: 'Backend Developer', company: 'StartupXYZ', location: 'Austin, TX', type: 'full-time' as const, remote: true, industry: 'Technology', posted: '3 days ago', applicants: 18, description: 'Design and implement scalable API services.' },
-  { id: '4', title: 'Data Analyst', company: 'FinanceHub', location: 'Chicago, IL', type: 'full-time' as const, remote: false, industry: 'Finance', posted: '5 days ago', applicants: 32, description: 'Analyze financial datasets and generate actionable insights.' },
-  { id: '5', title: 'UX Design Intern', company: 'DesignStudio', location: 'Remote', type: 'internship' as const, remote: true, industry: 'Design', posted: '1 day ago', applicants: 41, description: 'Help design user experiences for mobile and web products.' },
-  { id: '6', title: 'DevOps Engineer', company: 'CloudScale', location: 'Seattle, WA', type: 'contract' as const, remote: true, industry: 'Technology', posted: '4 days ago', applicants: 15, description: 'Manage CI/CD pipelines and cloud infrastructure.' },
+type EmpType = EmploymentType | "ALL";
+type WorkModeType = WorkMode | "ALL";
+
+const employmentTypeOptions: { value: EmpType; label: string }[] = [
+  { value: "ALL", label: "All" },
+  { value: "FULL_TIME", label: "Full Time" },
+  { value: "PART_TIME", label: "Part Time" },
+  { value: "INTERNSHIP", label: "Internship" },
+  { value: "CONTRACT", label: "Contract" },
 ];
 
-const typeColors: Record<string, string> = {
-  'full-time': 'bg-success/15 text-success',
-  'internship': 'bg-info/15 text-info',
-  'part-time': 'bg-warning/15 text-warning',
-  'contract': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-};
+const workModeOptions: { value: WorkModeType; label: string }[] = [
+  { value: "ALL", label: "All" },
+  { value: "ON_SITE", label: "On Site" },
+  { value: "REMOTE", label: "Remote" },
+  { value: "HYBRID", label: "Hybrid" },
+];
+
+const FEED_LIMIT = import.meta.env.VITE_FEED_LIMIT;
 
 const JobsPage = () => {
-  const [filter, setFilter] = useState('all');
-  const filtered = filter === 'all' ? jobs : jobs.filter(j => j.type === filter);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [empfilter, setEmpFilter] = useState<EmpType>("ALL");
+  const [workModeFilter, setWorkModeFilter] = useState<WorkModeType>("ALL");
+  const [jobs, setJobs] = useState<JobFeedItem[]>([]);
+  const [searchValue, setSearchValue] = useState<string>("");
+  const [searchInput, setSearchInput] = useState<string>("");
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  // ─── Cursor based pagination ────────────────────────────────────
+  const fetchJobs = useCallback(
+    async (options?: { reset?: boolean }) => {
+      const reset = options?.reset ?? false;
+      if (isLoading) return;
+
+      const cursorToUse = reset ? null : nextCursor;
+      if (!reset && !cursorToUse) return;
+
+      setIsLoading(true);
+
+      try {
+        // Create Parameters
+        const params = {
+          cursor: cursorToUse,
+          limit: FEED_LIMIT,
+          search: searchValue || undefined,
+          employmentType: empfilter === "ALL" ? undefined : empfilter,
+          workMode: workModeFilter === "ALL" ? undefined : workModeFilter,
+        };
+        console.log("Fetching jobs with params:", params);
+
+        // Fetch Jobs
+        const response = await api.get("career/jobs", { params });
+        console.log("Fetched jobs:", response.data);
+        const { nextCursor: fetchedNextCursor, data } = response.data;
+
+        // Remove duplicates and update the job list
+        setJobs((prev) =>
+          reset
+            ? deduplicateById<JobFeedItem>(data ?? [])
+            : deduplicateById<JobFeedItem>([...prev, ...data]),
+        );
+        setNextCursor(fetchedNextCursor ?? null);
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Failed to load jobs"));
+        console.error("Fetch Error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isLoading, nextCursor, searchValue, empfilter, workModeFilter],
+  );
+
+  // Auto trigger on search or status filter change
+  useEffect(() => {
+    console.log(
+      "Search or status filter changed, resetting feed and fetching jobs",
+      nextCursor,
+      searchValue,
+      empfilter,
+      workModeFilter,
+    );
+    fetchJobs({ reset: true }); // Reset feed to the first page
+
+    // fetchJobs depends on cursor state used for incremental loading.
+    // Here we only want to reset on filter changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchValue, empfilter, workModeFilter]);
+
+  // Auto load next page when the sentinel enters the viewport
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || isLoading || !nextCursor) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry?.isIntersecting) {
+          fetchJobs();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "240px 0px",
+        threshold: 0.1,
+      },
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [fetchJobs, isLoading, nextCursor]);
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Jobs & Internships</h1>
-          <p className="text-muted-foreground">Discover career opportunities from alumni and partners</p>
+          <h1 className="text-2xl font-bold text-foreground">
+            Jobs & Internships
+          </h1>
+          <p className="text-muted-foreground">
+            Discover career opportunities from alumni and partners
+          </p>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input className="h-9 w-full rounded-lg border bg-secondary pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Search jobs..." />
+      {/* Filters */}
+      <div className="flex flex-col flex-wrap items-center gap-3 sm:flex-row w-full">
+        <div className="relative flex-1 w-full align-self-stretch flex items-center gap-2">
+          <div className="relative flex-1 sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              className="h-9 w-full rounded-lg border bg-secondary pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Search jobs..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+          </div>
+          <button
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            onClick={() => setSearchValue(searchInput)}
+          >
+            Search
+          </button>
         </div>
-        <div className="flex gap-2">
-          {['all', 'full-time', 'internship', 'contract'].map((t) => (
-            <button key={t} onClick={() => setFilter(t)} className={cn(
-              'rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors',
-              filter === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
-            )}>
-              {t}
-            </button>
+
+        <div className="flex gap-3 justify-between align-self-stretch items-center">
+          <span className="text-sm font-medium text-muted-foreground">
+            Employment Type:
+          </span>
+
+          <select
+            className="rounded-lg border bg-secondary px-3 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            value={empfilter}
+            onChange={(e) => setEmpFilter(e.target.value as EmploymentType)}
+          >
+            {employmentTypeOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex gap-3 justify-between align-self-stretch items-center">
+          <span className="text-sm font-medium text-muted-foreground">
+            Work Mode:
+          </span>
+
+          <select
+            className="rounded-lg border bg-secondary px-3 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            value={workModeFilter}
+            onChange={(e) => setWorkModeFilter(e.target.value as WorkModeType)}
+          >
+            {workModeOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {user?.role === "ALUMNI" && (
+          <button
+            onClick={() => navigate("/jobs/manage")}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Manage Jobs
+          </button>
+        )}
+      </div>
+
+      {/* Job Listings */}
+      {isLoading && jobs.length === 0 ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="animate-pulse rounded-xl border bg-card p-5"
+            >
+              <Skeleton className="h-4 w-1/2 mb-2" />
+              <Skeleton className="h-3 w-1/4 mb-4" />
+              <Skeleton className="h-3 w-full mb-2" />
+              <Skeleton className="h-3 w-full mb-2" />
+              <Skeleton className="h-3 w-3/4 mb-2" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
           ))}
         </div>
-      </div>
+      ) : jobs.length === 0 ? (
+        <EmptyState
+          icon={<BriefcaseBusiness className="h-12 w-12" />}
+          title="No jobs found"
+          description="Try adjusting your search or filters to find what you're looking for."
+        />
+      ) : (
+        <div className="space-y-3 h-[calc(100vh-300px)] overflow-y-auto pr-1">
+          {jobs.map((job) => (
+            <JobCard
+              key={job._id}
+              job={job}
+              actions={
+                <>
+                  <Button
+                    onClick={() =>
+                      window.open(`/jobs/apply/${job._id}`, "_blank")
+                    }
+                    size="sm"
+                    className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:flex-none"
+                  >
+                    <BriefcaseBusiness className="h-4 w-4" />
+                    Apply
+                  </Button>
 
-      <div className="space-y-3">
-        {filtered.map((job) => (
-          <div key={job.id} className="group rounded-xl border bg-card p-5 transition-shadow hover:shadow-md">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex-1">
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <h3 className="text-base font-semibold text-card-foreground group-hover:text-primary transition-colors">{job.title}</h3>
-                  <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium capitalize', typeColors[job.type])}>{job.type}</span>
-                  {job.remote && <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">Remote</span>}
-                </div>
-                <p className="mb-2 text-sm text-muted-foreground">{job.description}</p>
-                <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Building className="h-3.5 w-3.5" /> {job.company}</span>
-                  <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {job.location}</span>
-                  <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {job.posted}</span>
-                  <span>{job.applicants} applicants</span>
-                </div>
-              </div>
-              <div className="flex gap-2 sm:flex-col">
-                <button className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:flex-none">Apply</button>
-                <button className="rounded-lg border p-2 text-muted-foreground hover:bg-secondary"><Bookmark className="h-4 w-4" /></button>
-              </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(`/jobs/${job._id}`, "_blank")}
+                    className="flex-1 gap-2 border-primary/20 text-primary hover:bg-primary/5 sm:flex-none w-full"
+                  >
+                    <Eye className="h-4 w-4" />
+                    View
+                  </Button>
+                </>
+              }
+            />
+          ))}
+
+          {isLoading && jobs.length > 0 && (
+            <div className="flex justify-center py-2 text-xs text-muted-foreground">
+              Loading more jobs...
             </div>
-          </div>
-        ))}
-      </div>
+          )}
+
+          {nextCursor && <div ref={loadMoreRef} className="h-1 w-full" />}
+        </div>
+      )}
     </div>
   );
 };

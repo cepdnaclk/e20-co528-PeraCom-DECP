@@ -14,6 +14,7 @@ import MessagesPage from "@/pages/MessagesPage";
 import ResearchPage from "@/pages/ResearchPage";
 import EventsPage from "@/pages/EventsPage";
 import JobsPage from "@/pages/JobsPage";
+import JobsManagementPage from "@/pages/JobsManagementPage";
 import AlumniPage from "@/pages/AlumniPage";
 import ProfilePage from "@/pages/ProfilePage";
 import SocialFeedPage from "@/pages/SocialFeedPage";
@@ -71,6 +72,18 @@ const App = () => (
               />
             ))}
 
+            {/* Alumni routes */}
+            <Route
+              path="/jobs/manage"
+              element={
+                <ProtectedRoute allowedRoles={["ALUMNI"]}>
+                  <DashboardLayout>
+                    <JobsManagementPage />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Admin routes */}
             {[
               "/admin",
@@ -89,7 +102,7 @@ const App = () => (
                       {path === "/admin" && <AdminOverviewPage />}
                       {path === "/admin/users" && <UserManagement />}
                       {path === "/admin/events" && <EventsPage />}
-                      {path === "/admin/jobs" && <JobsPage />}
+                      {path === "/admin/jobs" && <JobsManagementPage />}
                       {path === "/admin/research" && <ResearchPage />}
                       {path === "/admin/posts" && <SocialFeedPage />}
                     </AdminLayout>

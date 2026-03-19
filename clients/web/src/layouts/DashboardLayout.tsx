@@ -16,30 +16,29 @@ import {
   Search,
   LogOut,
   Menu,
-  X,
   ChevronLeft,
   Newspaper,
 } from "lucide-react";
 
 const studentNav = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { label: "Feed", icon: Newspaper, path: "/feed" },
+  { label: "Community", icon: Newspaper, path: "/feed" },
   { label: "Messages", icon: MessageSquare, path: "/messages" },
   { label: "Research", icon: FlaskConical, path: "/research" },
   { label: "Events", icon: Calendar, path: "/events" },
   { label: "Jobs", icon: Briefcase, path: "/jobs" },
-  { label: "Alumni Network", icon: Users, path: "/alumni" },
+  { label: "People", icon: Users, path: "/people" },
   { label: "Profile", icon: User, path: "/profile" },
 ];
 
 const alumniNav = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { label: "Feed", icon: Newspaper, path: "/feed" },
+  { label: "Community", icon: Newspaper, path: "/feed" },
   { label: "Messages", icon: MessageSquare, path: "/messages" },
   { label: "Research", icon: FlaskConical, path: "/research" },
   { label: "Events", icon: Calendar, path: "/events" },
-  { label: "Post Jobs", icon: Briefcase, path: "/jobs" },
-  { label: "Network", icon: Users, path: "/alumni" },
+  { label: "Jobs", icon: Briefcase, path: "/jobs" },
+  { label: "People", icon: Users, path: "/people" },
   { label: "Profile", icon: User, path: "/profile" },
 ];
 

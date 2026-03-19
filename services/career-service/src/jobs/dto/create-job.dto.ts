@@ -12,7 +12,7 @@ import {
   type ValidationArguments,
   Validate,
 } from "class-validator";
-import { EmploymentType } from "../schemas/job.schema.js";
+import { EmploymentType, WorkMode } from "../schemas/job.schema.js";
 
 @ValidatorConstraint({ name: "isFutureDate", async: false })
 export class IsFutureDateConstraint implements ValidatorConstraintInterface {
@@ -47,6 +47,9 @@ export class CreateJobDto {
 
   @IsEnum(EmploymentType)
   employmentType!: EmploymentType;
+
+  @IsEnum(WorkMode)
+  workMode!: WorkMode;
 
   @IsString()
   @IsNotEmpty()
