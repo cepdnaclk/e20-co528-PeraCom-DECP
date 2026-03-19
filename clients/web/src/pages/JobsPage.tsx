@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type UIEvent } from "react";
-import { Search, BriefcaseBusiness, Eye } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Search, BriefcaseBusiness, Eye, ExternalLink } from "lucide-react";
 import { EmploymentType, JobFeedItem, WorkMode } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/services/api";
@@ -248,7 +248,7 @@ const JobsPage = () => {
                     size="sm"
                     className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:flex-none"
                   >
-                    <BriefcaseBusiness className="h-4 w-4" />
+                    <ExternalLink className="h-4 w-4" />
                     Apply
                   </Button>
 
