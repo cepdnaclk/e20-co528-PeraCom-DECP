@@ -1011,6 +1011,7 @@ const PostCard = ({
       >
         <PostForm
           title="Update Post"
+          isOpen={isEditPostDialogOpen}
           initialData={{
             content: post.content || "",
             mediaUrls: [
@@ -1337,6 +1338,7 @@ const SocialFeedPage = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <PostForm
           title="Create Post"
+          isOpen={isDialogOpen}
           onSubmit={handlePublish}
           isSubmitting={isLoading}
         />

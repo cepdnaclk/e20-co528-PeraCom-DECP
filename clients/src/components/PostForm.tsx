@@ -15,6 +15,7 @@ import {
 
 export interface PostFormProps {
   title: string;
+  isOpen?: boolean;
   initialData?: {
     content?: string;
     mediaUrls?: string[];
@@ -33,6 +34,7 @@ const MAX_CHARACTERS = import.meta.env.VITE_MAX_ALLOWED_CHARACTERS;
 
 export default function PostForm({
   title,
+  isOpen = true,
   initialData,
   onSubmit,
   isSubmitting = false,
@@ -50,11 +52,13 @@ export default function PostForm({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     setContent(initialData?.content || "");
     setExistingRemoved(new Set());
     setNewFiles([]);
     setNewPreviews([]);
-  }, [initialData]);
+  }, [initialData, isOpen]);
 
   useEffect(() => {
     return () => {
@@ -180,6 +184,8 @@ export default function PostForm({
       remainingVideoUrl,
     });
   };
+
+  console.log("Initial Data", initialData);
 
   return (
     <DialogContent className="max-w-[95%] sm:max-w-[600px] p-0 max-h-[95%] flex flex-col">
