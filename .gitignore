@@ -6,3 +6,7 @@ node_modules/
 
 dist/
 services/notification-service_old/dist/notification/dto/read-all.dto.d.ts.map
+
+# Word Files
+*.docx
+*.doc

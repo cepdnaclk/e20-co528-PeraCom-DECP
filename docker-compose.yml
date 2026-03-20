@@ -410,7 +410,7 @@ services:
     container_name: decp-web-app
     build:
       context: .
-      dockerfile: ./clients/web/Dockerfile
+      dockerfile: ./clients/Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
@@ -419,7 +419,7 @@ services:
         VITE_MAX_ALLOWED_CHARACTERS: ${VITE_MAX_ALLOWED_CHARACTERS}
         VITE_FEED_LIMIT: ${VITE_FEED_LIMIT}
     env_file:
-      - ./clients/web/.env.prod
+      - ./clients/.env.prod
     depends_on:
       - kong
     networks:

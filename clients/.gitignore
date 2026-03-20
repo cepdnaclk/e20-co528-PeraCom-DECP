@@ -10,7 +10,11 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-*.local
+*.
+
+# Mobile
+ios
+android
 
 # Editor directories and files
 .vscode/*

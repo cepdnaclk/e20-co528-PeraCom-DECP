@@ -7,13 +7,13 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Copy package.json and package-lock.json to the working directory
-COPY clients/web/package*.json ./
+COPY clients/package*.json ./
 
 # Install dependencies (including dev dependencies for building)
 RUN npm install
 
 # Copy the rest of the application code to the working directory
-COPY clients/web ./
+COPY clients ./
 
 # Declare build arguments
 ARG VITE_API_URL
@@ -44,7 +44,7 @@ FROM nginx:stable-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy the custom Nginx configuration file to the appropriate location in the container:
-COPY clients/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY clients/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 80 for the Nginx server
 EXPOSE 80

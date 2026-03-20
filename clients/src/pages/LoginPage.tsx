@@ -3,7 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { UserSummary } from "@/types";
 import { GoogleCredentialResponse, GoogleLogin } from "@react-oauth/google";
 import api from "@/services/api";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import FakeGoogleSignup from "@/components/FakeGoogleSignup";
 
 const SUB_TITLE =
   "Connect with fellow students and alumni. Collaborate on research, discover career opportunities, and grow together.";
@@ -12,6 +13,27 @@ const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [showFallbackGoogleBtn, setShowFallbackGoogleBtn] = useState(false);
+  const googleBtnContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (showFallbackGoogleBtn) {
+      return;
+    }
+
+    const fallbackTimer = window.setTimeout(() => {
+      const container = googleBtnContainerRef.current;
+      const hasRenderedGoogleButton = !!container?.querySelector(
+        'iframe, [id^="gsi_"], div[role="button"]',
+      );
+
+      if (!hasRenderedGoogleButton) {
+        setShowFallbackGoogleBtn(true);
+      }
+    }, 1500);
+
+    return () => window.clearTimeout(fallbackTimer);
+  }, [showFallbackGoogleBtn]);
 
   const userVerify = async (credentialResponse: GoogleCredentialResponse) => {
     try {
@@ -88,13 +110,24 @@ const LoginPage = () => {
 
           {/* Google Login */}
           <div className="mb-6 flex justify-center">
-            <GoogleLogin
-              onSuccess={(credentialResponse) => userVerify(credentialResponse)}
-              onError={() => console.log("Login Failed")}
-              shape="pill"
-              logo_alignment="center"
-              text="continue_with"
-            />
+            {showFallbackGoogleBtn ? (
+              <FakeGoogleSignup onClick={(cr) => userVerify(cr)} />
+            ) : (
+              <div ref={googleBtnContainerRef}>
+                <GoogleLogin
+                  onSuccess={(credentialResponse) =>
+                    userVerify(credentialResponse)
+                  }
+                  onError={() => {
+                    console.log("Google Login failed to initialize");
+                    setShowFallbackGoogleBtn(true);
+                  }}
+                  shape="pill"
+                  logo_alignment="center"
+                  text="continue_with"
+                />
+              </div>
+            )}
           </div>
 
           {/* Error message component */}
