@@ -53,6 +53,7 @@ const App = () => (
               "/jobs",
               "/people",
               "/profile",
+              "/profile/:id",
               "/jobs/view/:id",
               "/jobs/apply/:id"
             ].map((path) => (
@@ -69,7 +70,7 @@ const App = () => (
                       {path === "/events" && <EventsPage />}
                       {path === "/jobs" && <JobsPage />}
                       {path === "/people" && <AlumniPage />}
-                      {path === "/profile" && <ProfilePage />}
+                      {(path === "/profile" || path === "/profile/:id") && <ProfilePage />}
                       {path === "/jobs/view/:id" && <ViewJobPage />}
                       {path === "/jobs/apply/:id" && <ApplyJobPage />}
                     </DashboardLayout>
