@@ -1,0 +1,28 @@
+{
+    "team": [
+        {
+            "name": "Chethiya Bandara",
+            "email": "e20032@eng.pdn.ac.lk",
+            "eNumber": "E/20/032"
+        },
+        {
+            "name": "Bimsara Janakantha",
+            "email": "e20157@eng.pdn.ac.lk",
+            "eNumber": "E/20/157"
+        },
+        {
+            "name": "Kavindu Methpura",
+            "email": "e20254@eng.pdn.ac.lk",
+            "eNumber": "E/20/254"
+        }
+    ],
+    "supervisors": [
+        {
+            "name": "Mr. Biswajith Dissanayake",
+            "email": "biswajithd@eng.pdn.ac.lk"
+        }
+    ],
+    "tags": ["MicroServices", "Kafka", "Docker", "DECP", "PeraCom", "Applied Software Architecture"],
+    "image":"cover_page.jpg",
+    "thumbnail":"thumbnail.jpg"
+}
